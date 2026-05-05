@@ -1,0 +1,128 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/.github/schemas/finding.schema.json",
+  "title": "SASTFinding",
+  "description": "A single security finding from a Java SAST scan. All Phase 2 skills MUST emit objects conforming to this schema.",
+  "type": "object",
+  "required": ["id", "skill", "cwe", "severity", "confidence", "file", "line", "evidence", "sink", "source", "sanitizer_present", "remediation"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique finding ID within this scan. Format: <SKILL_CODE>-<NNN>",
+      "pattern": "^[A-Z]+-[0-9]{3}$",
+      "examples": ["SQLI-001", "RCE-003", "IDOR-012"]
+    },
+    "skill": {
+      "type": "string",
+      "description": "Which Phase 2 skill produced this finding",
+      "enum": [
+        "sast-sqli", "sast-rce", "sast-idor", "sast-auth", "sast-xxe",
+        "sast-ssrf", "sast-crypto", "sast-deserial", "sast-pathtraversal",
+        "sast-business-logic", "sast-secrets", "sast-csrf", "sast-openredirect",
+        "sast-templateinject", "sast-massassignment", "sast-dependency",
+        "sast-researcher", "sast-api-abuse", "sast-attack-chain"
+      ]
+    },
+    "cwe": {
+      "type": "string",
+      "description": "Primary CWE identifier — use the most specific leaf-node CWE available",
+      "pattern": "^CWE-[0-9]+$",
+      "examples": ["CWE-89", "CWE-78", "CWE-639"]
+    },
+    "owasp": {
+      "type": "string",
+      "description": "OWASP Top 10 2021 category (optional)",
+      "examples": ["A03:2021-Injection", "A01:2021-Broken Access Control", "A02:2021-Cryptographic Failures"]
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["Critical", "High", "Medium", "Low", "Informational"],
+      "description": "Severity aligned to CVSS score bands. Critical=9.0-10.0, High=7.0-8.9, Medium=4.0-6.9, Low=0.1-3.9, Informational=hardening only"
+    },
+    "confidence": {
+      "type": "string",
+      "enum": ["High", "Medium", "Low"],
+      "description": "High=taint path confirmed source→sink, no sanitizer. Medium=likely vulnerable but path has gaps OR sanitizer may be insufficient. Low=pattern match only, manual review needed."
+    },
+    "file": {
+      "type": "string",
+      "description": "Path relative to repo root to the file containing the sink",
+      "examples": ["src/main/java/com/example/dao/UserDao.java"]
+    },
+    "line": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Line number of the sink expression in the file. NEVER fabricate — omit the finding if line cannot be determined."
+    },
+    "column": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Column number of the sink (optional)"
+    },
+    "method": {
+      "type": "string",
+      "description": "Name of the enclosing method",
+      "examples": ["findUserById", "executeQuery"]
+    },
+    "class": {
+      "type": "string",
+      "description": "Fully qualified class name containing the sink",
+      "examples": ["com.example.dao.UserDao"]
+    },
+    "evidence": {
+      "type": "string",
+      "description": "Exact code snippet showing the vulnerability (1–3 lines max)"
+    },
+    "sink": {
+      "type": "string",
+      "description": "The dangerous API being called",
+      "examples": ["Statement.executeQuery()", "Runtime.exec()", "new ObjectInputStream()"]
+    },
+    "source": {
+      "type": "string",
+      "description": "Where the tainted data originates from",
+      "examples": ["HttpServletRequest.getParameter(\"id\")", "@RequestParam String name", "request.getHeader(\"X-User-Id\")"]
+    },
+    "taint_path": {
+      "type": "array",
+      "description": "Intermediate steps in the taint flow from source to sink (empty array if source flows directly to sink)",
+      "items": {
+        "type": "object",
+        "required": ["step", "file", "line"],
+        "additionalProperties": false,
+        "properties": {
+          "step": {"type": "string", "description": "Description of the intermediate step"},
+          "file": {"type": "string"},
+          "line": {"type": "integer", "minimum": 1}
+        }
+      }
+    },
+    "sanitizer_present": {
+      "type": "boolean",
+      "description": "True if any sanitizer was found anywhere in the taint path. When true, confidence MUST be Medium or Low."
+    },
+    "sanitizer_detail": {
+      "type": "string",
+      "description": "If sanitizer_present is true: what sanitizer was found and why it may be insufficient. Empty string when sanitizer_present is false."
+    },
+    "remediation": {
+      "type": "string",
+      "description": "Specific fix instruction referencing the actual code. Not generic advice — show exactly what to change."
+    },
+    "references": {
+      "type": "array",
+      "description": "External references: CWE links, OWASP pages, CVE numbers",
+      "items": {"type": "string"}
+    },
+    "false_positive_indicators": {
+      "type": "array",
+      "description": "Patterns observed that reduce confidence this is exploitable — document why this might not be a real issue",
+      "items": {"type": "string"}
+    },
+    "duplicate_of": {
+      "type": ["string", "null"],
+      "description": "Set by Phase 3 (sast-report) if this finding duplicates another. Null when first emitted by Phase 2 skills."
+    }
+  }
+}
