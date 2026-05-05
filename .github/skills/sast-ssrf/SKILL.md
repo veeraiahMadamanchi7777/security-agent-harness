@@ -175,17 +175,22 @@ AWS credentials at: `http://169.254.169.254/latest/meta-data/iam/security-creden
 
 ---
 
-## Finding Format Example
+## Finding Format
+
+Follow the canonical format from `copilot-instructions.md`. Example:
 
 ```
 ### [CRITICAL] SSRF — Webhook URL Fully Attacker-Controlled
 
+**ID:** SSRF-001
 **File:** `src/main/java/com/example/WebhookService.java:29`
-**CWE:** CWE-918
-**CVSS:** 9.1 (AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:N/A:N)
+**CWE:** CWE-918 | **OWASP:** A10:2021-Server-Side Request Forgery
+**CVSS (estimated):** 9.1 (AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:N/A:N)
+**Confidence:** High
+**Skill:** `sast-ssrf`
 
 **Taint Path:**
-POST /api/webhooks → WebhookController.register(url) → WebhookService.testWebhook(url) → restTemplate.getForObject(url)
+`POST /api/webhooks {"url":"..."}` → `WebhookController.register(url) (WebhookController.java:18)` → `WebhookService.testWebhook(url) (WebhookService.java:27)` → `restTemplate.getForObject(url) (WebhookService.java:29)` — no URL validation
 
 **Vulnerable Code:**
 ```java
@@ -195,30 +200,37 @@ public void testWebhook(String url) {
 }
 ```
 
-**Proof of Concept:**
-```
+**Why Exploitable:**
+`url` is passed from the request body directly to `RestTemplate.getForObject` with no host, scheme, or IP range validation. An attacker supplies an internal URL (e.g., AWS IMDSv1) to read cloud credentials or probe internal services inaccessible from the public internet.
+
+**Proof-of-Concept:**
+```http
 POST /api/webhooks HTTP/1.1
 Authorization: Bearer <any_user_token>
 Content-Type: application/json
 
 {"url": "http://169.254.169.254/latest/meta-data/iam/security-credentials/ec2-role"}
 ```
-Returns AWS instance metadata with temporary credentials.
+Returns AWS instance metadata with temporary IAM credentials.
 
 **Remediation:**
+Use an allowlist, not a blocklist (blocklists are bypassable via IPv6, hex IPs, DNS rebinding):
 ```java
 URI uri = URI.create(url);
-String host = uri.getHost();
-InetAddress addr = InetAddress.getByName(host);
-if (addr.isLoopbackAddress() || addr.isSiteLocalAddress() || addr.isLinkLocalAddress()) {
-    throw new SecurityException("SSRF: private/loopback addresses not allowed");
-}
-if (!ALLOWED_DOMAINS.stream().anyMatch(d -> host.endsWith(d))) {
+if (!ALLOWED_DOMAINS.stream().anyMatch(d -> uri.getHost().endsWith(d))) {
     throw new SecurityException("SSRF: host not in allowlist");
+}
+InetAddress addr = InetAddress.getByName(uri.getHost());
+if (addr.isLoopbackAddress() || addr.isSiteLocalAddress() || addr.isLinkLocalAddress()) {
+    throw new SecurityException("SSRF: private/loopback address");
 }
 restTemplate.getForObject(url, String.class);
 ```
-Note: Use allowlist, not blocklist. Blocklists are bypassable via IPv6, hex IP, DNS rebinding.
 
-**References:** CWE-918, OWASP A10:2021
+**References:** https://cwe.mitre.org/data/definitions/918.html, OWASP A10:2021
+```
+
+JSONL line (append to `.github/sast-findings.jsonl`):
+```json
+{"id":"SSRF-001","skill":"sast-ssrf","cwe":"CWE-918","owasp":"A10:2021-Server-Side Request Forgery","severity":"Critical","confidence":"High","file":"src/main/java/com/example/WebhookService.java","line":29,"method":"testWebhook","class":"com.example.WebhookService","evidence":"restTemplate.getForObject(url, String.class);","sink":"RestTemplate.getForObject()","source":"POST body field \"url\"","taint_path":[{"step":"WebhookController.register passes url to service","file":"src/main/java/com/example/WebhookController.java","line":18}],"sanitizer_present":false,"sanitizer_detail":"","remediation":"Validate url against an allowlist of permitted hostnames before passing to RestTemplate","references":["https://cwe.mitre.org/data/definitions/918.html"],"false_positive_indicators":[],"duplicate_of":null}
 ```

@@ -24,24 +24,32 @@ You are a senior application security engineer performing static analysis on Jav
 
 ## Output Format Standards
 
-Every finding must follow this structure exactly:
+Every finding must follow this structure exactly. All Phase 2 skills emit findings in two forms: a **Markdown block** for display and a **JSONL line** appended to `.github/sast-findings.jsonl`.
+
+### Markdown display block
 
 ```
 ### [SEVERITY] VulnType — ShortDescription
 
+**ID:** <SKILL_CODE>-NNN
 **File:** `path/to/File.java:LINE`
-**CWE:** CWE-XXX
+**CWE:** CWE-XXX | **OWASP:** A0X:2021-Category
 **CVSS (estimated):** X.X (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H)
+**Confidence:** High | Medium | Low
+**Skill:** `sast-skill-name`
+
+**Taint Path:**
+`Source (File.java:LINE)` → `intermediate step (File.java:LINE)` → `Sink (File.java:LINE)`
 
 **Vulnerable Code:**
 ```java
-// paste the exact vulnerable snippet, 5–15 lines, with line numbers
+// exact vulnerable snippet, 5–15 lines, with line numbers
 ```
 
 **Why Exploitable:**
-One paragraph explaining the attack path: attacker-controlled input → taint path → sink. Be concrete.
+One paragraph: attacker-controlled input → taint path → sink → impact. Be concrete.
 
-**Proof-of-Concept (where feasible):**
+**Proof-of-Concept:**
 ```http
 POST /endpoint HTTP/1.1
 ...
@@ -50,8 +58,16 @@ POST /endpoint HTTP/1.1
 **Remediation:**
 Specific fix with code example. Name the library/API to use.
 
-**References:** CVE/CWE/OWASP links
+**References:** CWE link, OWASP link, CVE if applicable
 ```
+
+### JSONL line (append to `.github/sast-findings.jsonl`)
+
+```json
+{"id":"SKILL-001","skill":"sast-skill-name","cwe":"CWE-XXX","owasp":"A0X:2021-Category","severity":"High","confidence":"High","file":"src/main/java/com/example/Foo.java","line":42,"method":"methodName","class":"com.example.Foo","evidence":"exact 1-3 line snippet","sink":"DangerousApi.method()","source":"request.getParameter(\"x\")","taint_path":[{"step":"description","file":"src/main/java/com/example/Foo.java","line":42}],"sanitizer_present":false,"sanitizer_detail":"","remediation":"specific fix","references":["https://cwe.mitre.org/data/definitions/XXX.html"],"false_positive_indicators":[],"duplicate_of":null}
+```
+
+Schema: `.github/schemas/finding.schema.json`. Required fields: `id`, `skill`, `cwe`, `severity`, `confidence`, `file`, `line`, `evidence`, `sink`, `source`, `sanitizer_present`, `remediation`. `duplicate_of` is set by Phase 3 only; emit `null` from Phase 2 skills.
 
 ---
 

@@ -112,13 +112,15 @@ Write `.github/sast-report.md` using this structure:
 
 ### [SEVERITY] VulnType — ShortDescription
 
+**ID:** SKILL-NNN
 **File:** `path/to/File.java:LINE`
-**CWE:** CWE-XXX
-**Confidence:** High|Medium|Low
+**CWE:** CWE-XXX | **OWASP:** A0X:2021-Category
+**CVSS (estimated):** X.X (vector)
+**Confidence:** High | Medium | Low
 **Skill:** `sast-name`
 
 **Taint Path:**
-source → intermediate methods → sink
+`Source (File.java:LINE)` → `intermediate step (File.java:LINE)` → `Sink (File.java:LINE)`
 
 **Vulnerable Code:**
 ```java

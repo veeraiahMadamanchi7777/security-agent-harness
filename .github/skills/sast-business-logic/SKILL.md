@@ -202,14 +202,22 @@ grep -rn "discount\b\|discountPercent\b\|discountAmount\b" --include="*.java" | 
 
 ---
 
-## Finding Format Example
+## Finding Format
+
+Follow the canonical format from `copilot-instructions.md`. Example:
 
 ```
 ### [HIGH] Race Condition — Balance Not Atomically Updated (Double-Spend)
 
+**ID:** BIZ-001
 **File:** `src/main/java/com/example/PaymentService.java:55`
-**CWE:** CWE-362
-**CVSS:** 8.1 (AV:N/AC:H/PR:L/UI:N/S:U/C:N/I:H/A:N)
+**CWE:** CWE-362 | **OWASP:** A04:2021-Insecure Design
+**CVSS (estimated):** 8.1 (AV:N/AC:H/PR:L/UI:N/S:U/C:N/I:H/A:N)
+**Confidence:** High
+**Skill:** `sast-business-logic`
+
+**Taint Path:**
+`POST /api/withdraw {"accountId":X,"amount":Y}` → `PaymentService.withdraw(accountId, amount) (PaymentService.java:50)` → `accountRepository.findById(accountId) (PaymentService.java:52)` [check] → `accountRepository.save(account) (PaymentService.java:57)` [update] — non-atomic TOCTOU window
 
 **Vulnerable Code:**
 ```java
@@ -225,29 +233,33 @@ public void withdraw(Long accountId, BigDecimal amount) {
 }
 ```
 
-**Attack Scenario:**
-Concurrent requests with identical payload exploit the window between the balance check and the save, resulting in both transactions succeeding despite insufficient funds.
+**Why Exploitable:**
+`@Transactional` with `READ_COMMITTED` (the default) does not prevent two concurrent transactions from both reading the same balance, both passing the check, and both committing a deduction. An attacker sends identical withdrawal requests in rapid succession, causing a double-spend without sufficient funds.
+
+**Proof-of-Concept:**
+```bash
+# Send two concurrent withdrawal requests exceeding balance
+curl -X POST /api/withdraw -d '{"accountId":1,"amount":500}' &
+curl -X POST /api/withdraw -d '{"accountId":1,"amount":500}' &
+# Both may succeed when balance is only 600
+```
 
 **Remediation:**
-Option 1 — Optimistic locking:
 ```java
-// Add @Version to Account entity
-@Version private Long version;
-// Caller catches OptimisticLockingFailureException and retries
-```
-
-Option 2 — Pessimistic locking:
-```java
+// Option 1: Pessimistic locking in repository
 @Lock(LockModeType.PESSIMISTIC_WRITE)
 Optional<Account> findById(Long id);
-```
 
-Option 3 — Database atomic update:
-```java
+// Option 2: Atomic DB update (preferred)
 @Query("UPDATE Account a SET a.balance = a.balance - :amount WHERE a.id = :id AND a.balance >= :amount")
 int decrementBalance(@Param("id") Long id, @Param("amount") BigDecimal amount);
-// Check return value: 0 = insufficient funds
+// Returns 0 if insufficient funds
 ```
 
-**References:** CWE-362, OWASP A04:2021
+**References:** https://cwe.mitre.org/data/definitions/362.html, OWASP A04:2021
+```
+
+JSONL line (append to `.github/sast-findings.jsonl`):
+```json
+{"id":"BIZ-001","skill":"sast-business-logic","cwe":"CWE-362","owasp":"A04:2021-Insecure Design","severity":"High","confidence":"High","file":"src/main/java/com/example/PaymentService.java","line":55,"method":"withdraw","class":"com.example.PaymentService","evidence":"Account account = accountRepository.findById(accountId).orElseThrow();\nif (account.getBalance().compareTo(amount) < 0) { throw ...; }\naccount.setBalance(account.getBalance().subtract(amount));\naccountRepository.save(account);","sink":"accountRepository.save()","source":"POST /api/withdraw amount parameter","taint_path":[],"sanitizer_present":false,"sanitizer_detail":"","remediation":"Use PESSIMISTIC_WRITE lock on findById or atomic UPDATE query with balance >= amount predicate","references":["https://cwe.mitre.org/data/definitions/362.html"],"false_positive_indicators":[],"duplicate_of":null}
 ```

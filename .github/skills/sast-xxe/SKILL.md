@@ -195,14 +195,22 @@ xmlInputFactory.setProperty(XMLInputFactory.SUPPORT_DTD, Boolean.FALSE);
 
 ---
 
-## Finding Format Example
+## Finding Format
+
+Follow the canonical format from `copilot-instructions.md`. Example:
 
 ```
 ### [CRITICAL] XXE — Unauthenticated XML Endpoint Without Parser Hardening
 
+**ID:** XXE-001
 **File:** `src/main/java/com/example/ImportController.java:41`
-**CWE:** CWE-611
-**CVSS:** 9.1 (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:L)
+**CWE:** CWE-611 | **OWASP:** A05:2021-Security Misconfiguration
+**CVSS (estimated):** 9.1 (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:L)
+**Confidence:** High
+**Skill:** `sast-xxe`
+
+**Taint Path:**
+`POST /api/import body (XML)` → `ImportController.importData(@RequestBody InputStream xmlInput) (ImportController.java:38)` → `DocumentBuilderFactory.newInstance() (ImportController.java:40)` → `builder.parse(xmlInput) (ImportController.java:41)` — no XXE features set
 
 **Vulnerable Code:**
 ```java
@@ -211,12 +219,14 @@ public ResponseEntity<?> importData(@RequestBody InputStream xmlInput) {
     DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance(); // no features set
     DocumentBuilder builder = factory.newDocumentBuilder();
     Document doc = builder.parse(xmlInput); // attacker-controlled XML parsed here
-    ...
 }
 ```
 
-**Proof of Concept:**
-```
+**Why Exploitable:**
+`DocumentBuilderFactory` is instantiated with default settings, which allow DOCTYPE declarations and external entity resolution. An attacker sends XML with an `ENTITY` referencing `file:///etc/passwd`; the parser fetches and inlines the file content, which is then reflected in the response.
+
+**Proof-of-Concept:**
+```http
 POST /api/import HTTP/1.1
 Content-Type: application/xml
 
@@ -224,7 +234,7 @@ Content-Type: application/xml
 <!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>
 <import><field>&xxe;</field></import>
 ```
-Response contains `/etc/passwd` content if entity is reflected.
+Response contains `/etc/passwd` content if entity value is reflected.
 
 **Remediation:**
 ```java
@@ -237,5 +247,10 @@ factory.setExpandEntityReferences(false);
 DocumentBuilder builder = factory.newDocumentBuilder();
 ```
 
-**References:** CWE-611, OWASP A05:2021, CVE-2021-44228 (for XXE+JNDI chains)
+**References:** https://cwe.mitre.org/data/definitions/611.html, OWASP A05:2021
+```
+
+JSONL line (append to `.github/sast-findings.jsonl`):
+```json
+{"id":"XXE-001","skill":"sast-xxe","cwe":"CWE-611","owasp":"A05:2021-Security Misconfiguration","severity":"Critical","confidence":"High","file":"src/main/java/com/example/ImportController.java","line":41,"method":"importData","class":"com.example.ImportController","evidence":"DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();\nDocumentBuilder builder = factory.newDocumentBuilder();\nDocument doc = builder.parse(xmlInput);","sink":"DocumentBuilder.parse()","source":"@RequestBody InputStream xmlInput","taint_path":[],"sanitizer_present":false,"sanitizer_detail":"","remediation":"Set disallow-doctype-decl and external entity features to false on DocumentBuilderFactory before use","references":["https://cwe.mitre.org/data/definitions/611.html"],"false_positive_indicators":[],"duplicate_of":null}
 ```

@@ -181,14 +181,22 @@ This is a manual check — note the need to rotate even if removed from current 
 
 ---
 
-## Finding Format Example
+## Finding Format
+
+Follow the canonical format from `copilot-instructions.md`. Example:
 
 ```
 ### [CRITICAL] Hardcoded Secret — JWT Signing Key in Source Code
 
+**ID:** SECRETS-001
 **File:** `src/main/java/com/example/JwtConfig.java:15`
-**CWE:** CWE-798
-**CVSS:** 9.1 (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N)
+**CWE:** CWE-798 | **OWASP:** A02:2021-Cryptographic Failures
+**CVSS (estimated):** 9.1 (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N)
+**Confidence:** High
+**Skill:** `sast-secrets`
+
+**Taint Path:**
+`static final String JWT_SECRET = "s3cr3t!..." (JwtConfig.java:15)` → used by `JwtService.generateToken() (JwtService.java:34)` to sign all issued tokens
 
 **Vulnerable Code:**
 ```java
@@ -200,19 +208,27 @@ public class JwtConfig {
 }
 ```
 
-**Impact:**
-Any developer/contractor with repo access can forge valid JWT tokens for any user, including admin accounts. If the repo is public or leaked, the application's entire auth system is compromised.
+**Why Exploitable:**
+Any person with repository read access (current or historical) can use this key to sign arbitrary JWT tokens claiming any user identity or role, bypassing all authentication and authorization controls.
+
+**Proof-of-Concept:**
+```python
+import jwt
+token = jwt.encode({"sub":"admin","role":"ADMIN"}, "s3cr3t!JWT@K3y#2024Pr0duct10n", algorithm="HS256")
+# Use token in Authorization: Bearer <token>
+```
 
 **Remediation:**
-1. **Rotate immediately** — the current secret is compromised.
-2. Move to environment variable:
-```java
-@Value("${JWT_SECRET}")
-private String jwtSecret;
-```
-3. Set `JWT_SECRET` via CI/CD secrets, AWS Secrets Manager, or HashiCorp Vault.
-4. Use minimum 256-bit (32 byte) random key: `openssl rand -hex 32`
-5. If key exists in git history: rotate, then use `git filter-repo` to scrub history.
+1. Rotate immediately — treat the key as compromised
+2. Load from environment: `@Value("${JWT_SECRET}") private String jwtSecret;`
+3. Set via CI/CD secrets or secrets manager (AWS Secrets Manager, HashiCorp Vault)
+4. Minimum key size: 256-bit random — `openssl rand -hex 32`
+5. If present in git history: rotate first, then scrub with `git filter-repo`
 
-**References:** CWE-798, OWASP A02:2021
+**References:** https://cwe.mitre.org/data/definitions/798.html, OWASP A02:2021
+```
+
+JSONL line (append to `.github/sast-findings.jsonl`):
+```json
+{"id":"SECRETS-001","skill":"sast-secrets","cwe":"CWE-798","owasp":"A02:2021-Cryptographic Failures","severity":"Critical","confidence":"High","file":"src/main/java/com/example/JwtConfig.java","line":15,"method":"","class":"com.example.JwtConfig","evidence":"private static final String JWT_SECRET = \"s3cr3t!JWT@K3y#2024Pr0duct10n\";","sink":"JWT signing key","source":"Hardcoded string literal in source code","taint_path":[],"sanitizer_present":false,"sanitizer_detail":"","remediation":"Remove hardcoded value; load from @Value(\"${JWT_SECRET}\") backed by CI/CD secrets or secrets manager","references":["https://cwe.mitre.org/data/definitions/798.html"],"false_positive_indicators":[],"duplicate_of":null}
 ```

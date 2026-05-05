@@ -136,13 +136,57 @@ Only report candidates that survive this challenge.
 
 ## Finding Format
 
-Emit findings using `.github/schemas/finding.schema.json`.
+Follow the canonical format from `copilot-instructions.md`. Example:
 
-Use skill value: `sast-researcher`.
+```
+### [HIGH] Trust Boundary Mismatch — tenantId Sourced from Request Header
 
-Recommended ID prefix: `RESEARCH-001`.
+**ID:** RESEARCH-001
+**File:** `src/main/java/com/example/TenantService.java:22`
+**CWE:** CWE-863 | **OWASP:** A01:2021-Broken Access Control
+**CVSS (estimated):** 8.6 (AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:N/A:N)
+**Confidence:** High
+**Skill:** `sast-researcher`
 
-Use the most specific CWE available. If the issue is a confused-deputy or trust-boundary flaw without a better fit, use `CWE-863` or `CWE-284`.
+**Taint Path:**
+`X-Tenant-ID header` → `TenantFilter.doFilter() (TenantFilter.java:18)` → `TenantContext.set(tenantId) (TenantFilter.java:22)` → `TenantService.getRecords() (TenantService.java:45)` → `repository.findByTenantId(tenantId)` — attacker controls data scope
+
+**Vulnerable Code:**
+```java
+// TenantFilter.java:18
+String tenantId = request.getHeader("X-Tenant-ID");
+TenantContext.set(tenantId);  // no validation against JWT claim
+```
+
+**Why Exploitable:**
+`tenantId` is read from a request header without verifying it matches the authenticated user's JWT claim. Any authenticated user can set `X-Tenant-ID` to another tenant's ID and access cross-tenant data.
+
+**Proof-of-Concept:**
+```http
+GET /api/records HTTP/1.1
+Authorization: Bearer <TenantA_token>
+X-Tenant-ID: tenant-B
+```
+Returns Tenant B's records to a Tenant A user.
+
+**Remediation:**
+Extract `tenantId` from the validated JWT claim, not the request header:
+```java
+String tenantId = ((JwtAuthToken) SecurityContextHolder.getContext()
+    .getAuthentication()).getTenantId();
+TenantContext.set(tenantId);
+```
+
+**References:** https://cwe.mitre.org/data/definitions/863.html, OWASP A01:2021
+```
+
+Use skill value `sast-researcher`. Recommended ID prefix: `RESEARCH-NNN`.
+Use the most specific CWE available; for trust-boundary or confused-deputy flaws use `CWE-863` or `CWE-284`.
+
+JSONL line (append to `.github/sast-findings.jsonl`):
+```json
+{"id":"RESEARCH-001","skill":"sast-researcher","cwe":"CWE-863","owasp":"A01:2021-Broken Access Control","severity":"High","confidence":"High","file":"src/main/java/com/example/TenantFilter.java","line":22,"method":"doFilter","class":"com.example.TenantFilter","evidence":"String tenantId = request.getHeader(\"X-Tenant-ID\");\nTenantContext.set(tenantId);","sink":"TenantContext.set() with attacker-controlled value","source":"request.getHeader(\"X-Tenant-ID\")","taint_path":[{"step":"TenantContext propagated to repository query","file":"src/main/java/com/example/TenantService.java","line":45}],"sanitizer_present":false,"sanitizer_detail":"","remediation":"Read tenantId from JWT claim in SecurityContext, not from request header","references":["https://cwe.mitre.org/data/definitions/863.html"],"false_positive_indicators":["gateway validates header before forwarding"],"duplicate_of":null}
+```
 
 ---
 

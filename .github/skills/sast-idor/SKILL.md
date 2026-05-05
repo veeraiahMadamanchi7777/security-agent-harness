@@ -130,18 +130,22 @@ grep -rn "setUserId\|setRole\|setAdmin\|setAccountId\|setTenantId\|setOwnerId" -
 
 ---
 
-## Finding Format Example
+## Finding Format
+
+Follow the canonical format from `copilot-instructions.md`. Example:
 
 ```
 ### [HIGH] IDOR — Account Record Access Without Ownership Check
 
+**ID:** IDOR-001
 **File:** `src/main/java/com/example/AccountController.java:34`
-**CWE:** CWE-639
-**CVSS:** 8.1 (AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N)
+**CWE:** CWE-639 | **OWASP:** A01:2021-Broken Access Control
+**CVSS (estimated):** 8.1 (AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N)
+**Confidence:** High
+**Skill:** `sast-idor`
 
 **Taint Path:**
-GET /api/accounts/{accountId} → AccountController.getAccount(accountId) → accountRepository.findById(accountId)
-No ownership check between JWT principal and returned account.
+`GET /api/accounts/{accountId}` → `AccountController.getAccount(@PathVariable accountId) (AccountController.java:34)` → `accountRepository.findById(accountId) (AccountController.java:36)` — no ownership predicate applied
 
 **Vulnerable Code:**
 ```java
@@ -153,13 +157,15 @@ public Account getAccount(@PathVariable Long accountId) {
 }
 ```
 
-**Proof of Concept:**
-Authenticated as User A (accountId=100):
-```
+**Why Exploitable:**
+`accountId` is taken from the URL path and passed directly to `findById` without comparing it to the authenticated user's own ID. Any authenticated user can enumerate accounts by incrementing the ID, accessing other users' data.
+
+**Proof-of-Concept:**
+```http
 GET /api/accounts/101 HTTP/1.1
 Authorization: Bearer <User_A_JWT>
 ```
-Returns User B's account data.
+Returns User B's account data when User A's account is 100.
 
 **Remediation:**
 ```java
@@ -170,7 +176,12 @@ public Account getAccount(@PathVariable Long accountId, Authentication auth) {
     return account;
 }
 ```
-Or use `@PreAuthorize` with SpEL expression binding to the resource owner.
+Or use `@PreAuthorize("@accountSecurity.isOwner(#accountId, authentication)")`.
 
-**References:** CWE-639, OWASP A01:2021
+**References:** https://cwe.mitre.org/data/definitions/639.html, OWASP A01:2021
+```
+
+JSONL line (append to `.github/sast-findings.jsonl`):
+```json
+{"id":"IDOR-001","skill":"sast-idor","cwe":"CWE-639","owasp":"A01:2021-Broken Access Control","severity":"High","confidence":"High","file":"src/main/java/com/example/AccountController.java","line":36,"method":"getAccount","class":"com.example.AccountController","evidence":"return accountRepository.findById(accountId)\n    .orElseThrow(() -> new ResourceNotFoundException(...));","sink":"accountRepository.findById(accountId)","source":"@PathVariable Long accountId","taint_path":[],"sanitizer_present":false,"sanitizer_detail":"","remediation":"Use findByIdAndUserId(accountId, auth.getPrincipal().getId()) to assert ownership","references":["https://cwe.mitre.org/data/definitions/639.html"],"false_positive_indicators":[],"duplicate_of":null}
 ```

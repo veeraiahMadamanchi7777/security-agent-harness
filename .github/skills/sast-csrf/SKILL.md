@@ -151,14 +151,22 @@ grep -rn "allowCredentials.*true\|setAllowCredentials(true)" --include="*.java" 
 
 ---
 
-## Finding Format Example
+## Finding Format
+
+Follow the canonical format from `copilot-instructions.md`. Example:
 
 ```
 ### [HIGH] CSRF — Blanket csrf().disable() with Session Authentication
 
+**ID:** CSRF-001
 **File:** `src/main/java/com/example/SecurityConfig.java:34`
-**CWE:** CWE-352
-**CVSS:** 8.8 (AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H)
+**CWE:** CWE-352 | **OWASP:** A01:2021-Broken Access Control
+**CVSS (estimated):** 8.8 (AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H)
+**Confidence:** High
+**Skill:** `sast-csrf`
+
+**Taint Path:**
+`SecurityConfig.filterChain() (SecurityConfig.java:34)` — `.csrf().disable()` removes CSRF protection globally → session-authenticated endpoints at `/api/**` accept cross-origin state-changing requests without token validation
 
 **Vulnerable Code:**
 ```java
@@ -170,25 +178,39 @@ public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
             .requestMatchers("/api/**").authenticated()
         )
         .sessionManagement(sess -> sess
-            .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));  // ← sessions are used
+            .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));  // ← sessions used
     return http.build();
 }
 ```
 
-**Attack Scenario:**
-If a user visits a malicious page while authenticated, the page can submit a form or make a request to `/api/users/profile` (password change) and the user's session cookie will be automatically included.
+**Why Exploitable:**
+Sessions are enabled (`IF_REQUIRED`) and CSRF is globally disabled. A browser automatically includes the session cookie on cross-origin requests. An attacker embeds a form or `fetch()` on a malicious page targeting `/api/users/password` (or any mutation endpoint); when the victim visits, the request executes with their session.
+
+**Proof-of-Concept:**
+```html
+<!-- Attacker's page -->
+<form action="https://target.com/api/users/password" method="POST">
+  <input name="newPassword" value="hacked123">
+</form>
+<script>document.forms[0].submit();</script>
+```
 
 **Remediation:**
-Remove `.csrf().disable()`. For REST APIs that need to support CSRF tokens:
 ```java
+// Remove .csrf().disable(); replace with:
 http.csrf(csrf -> csrf
     .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
     .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
 );
+// Or if stateless JWT: use SessionCreationPolicy.STATELESS instead
 ```
-Or if using stateless JWT: set `SessionCreationPolicy.STATELESS` instead of disabling CSRF.
 
-**References:** CWE-352, OWASP A01:2021
+**References:** https://cwe.mitre.org/data/definitions/352.html, OWASP A01:2021
+```
+
+JSONL line (append to `.github/sast-findings.jsonl`):
+```json
+{"id":"CSRF-001","skill":"sast-csrf","cwe":"CWE-352","owasp":"A01:2021-Broken Access Control","severity":"High","confidence":"High","file":"src/main/java/com/example/SecurityConfig.java","line":34,"method":"filterChain","class":"com.example.SecurityConfig","evidence":".csrf().disable()","sink":"HttpSecurity.csrf().disable()","source":"Cross-origin browser request with session cookie","taint_path":[],"sanitizer_present":false,"sanitizer_detail":"","remediation":"Remove .csrf().disable(); configure CookieCsrfTokenRepository or use STATELESS session policy with JWT","references":["https://cwe.mitre.org/data/definitions/352.html"],"false_positive_indicators":["stateless JWT auth with SessionCreationPolicy.STATELESS"],"duplicate_of":null}
 ```
 
 ---

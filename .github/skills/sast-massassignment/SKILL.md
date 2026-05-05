@@ -84,16 +84,64 @@ Do not treat `@Valid` alone as sufficient if sensitive fields are still client-w
 
 ## Finding Format
 
-Emit findings using `.github/schemas/finding.schema.json`.
+Follow the canonical format from `copilot-instructions.md`. Example:
 
-Recommended CWE: `CWE-915`.
+```
+### [HIGH] Mass Assignment — @RequestBody Bound Directly to User Entity
 
-Example sink names:
+**ID:** MASS-001
+**File:** `src/main/java/com/example/UserController.java:44`
+**CWE:** CWE-915 | **OWASP:** A04:2021-Insecure Design
+**CVSS (estimated):** 8.1 (AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:H/A:N)
+**Confidence:** High
+**Skill:** `sast-massassignment`
 
-- `JpaRepository.save()`
-- `EntityManager.merge()`
-- `BeanUtils.copyProperties()`
-- `ObjectMapper.readValue()`
+**Taint Path:**
+`PUT /api/users/{id} body (JSON)` → `UserController.update(@RequestBody User user) (UserController.java:44)` → `userRepository.save(user) (UserController.java:46)` — sensitive fields (role, isAdmin) bindable from request
+
+**Vulnerable Code:**
+```java
+@PutMapping("/api/users/{id}")
+public User update(@PathVariable Long id, @RequestBody User user) {
+    user.setId(id);
+    return userRepository.save(user);  // persists all fields including role, isAdmin
+}
+```
+
+**Why Exploitable:**
+`@RequestBody User` binds the full JSON payload to the JPA entity, including `role` and `isAdmin` fields. An authenticated user can escalate their own privileges by including `"role":"ADMIN"` in the request body.
+
+**Proof-of-Concept:**
+```http
+PUT /api/users/42 HTTP/1.1
+Authorization: Bearer <regular_user_token>
+Content-Type: application/json
+
+{"username":"alice","email":"alice@example.com","role":"ADMIN","isAdmin":true}
+```
+
+**Remediation:**
+Use a narrow DTO that excludes sensitive fields:
+```java
+@PutMapping("/api/users/{id}")
+public User update(@PathVariable Long id, @RequestBody UserUpdateDto dto) {
+    User user = userRepository.findById(id).orElseThrow();
+    user.setUsername(dto.getUsername());
+    user.setEmail(dto.getEmail());
+    // role and isAdmin not in UserUpdateDto — cannot be mass-assigned
+    return userRepository.save(user);
+}
+```
+
+**References:** https://cwe.mitre.org/data/definitions/915.html, OWASP A04:2021
+```
+
+Recommended sink names: `JpaRepository.save()`, `EntityManager.merge()`, `BeanUtils.copyProperties()`, `ObjectMapper.readValue()`
+
+JSONL line (append to `.github/sast-findings.jsonl`):
+```json
+{"id":"MASS-001","skill":"sast-massassignment","cwe":"CWE-915","owasp":"A04:2021-Insecure Design","severity":"High","confidence":"High","file":"src/main/java/com/example/UserController.java","line":46,"method":"update","class":"com.example.UserController","evidence":"return userRepository.save(user);","sink":"JpaRepository.save()","source":"@RequestBody User user","taint_path":[],"sanitizer_present":false,"sanitizer_detail":"","remediation":"Replace @RequestBody User with a narrow DTO that omits role, isAdmin, and other privilege fields","references":["https://cwe.mitre.org/data/definitions/915.html"],"false_positive_indicators":["@JsonIgnore on sensitive fields","@InitBinder with allowed fields restriction"],"duplicate_of":null}
+```
 
 ---
 

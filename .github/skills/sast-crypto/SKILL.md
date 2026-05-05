@@ -160,14 +160,22 @@ grep -rn "rot13\|caesar\|charAtOffset\|char.*+.*13" --include="*.java" -i
 
 ---
 
-## Finding Format Example
+## Finding Format
+
+Follow the canonical format from `copilot-instructions.md`. Example:
 
 ```
 ### [CRITICAL] Weak Crypto — MD5 Used for Password Hashing
 
+**ID:** CRYPTO-001
 **File:** `src/main/java/com/example/UserService.java:78`
-**CWE:** CWE-916
-**CVSS:** 9.1 (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N)
+**CWE:** CWE-916 | **OWASP:** A02:2021-Cryptographic Failures
+**CVSS (estimated):** 9.1 (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N)
+**Confidence:** High
+**Skill:** `sast-crypto`
+
+**Taint Path:**
+`rawPassword` (caller-supplied) → `UserService.setPassword(rawPassword) (UserService.java:76)` → `MessageDigest.getInstance("MD5").digest(rawPassword.getBytes()) (UserService.java:78)` → stored as `passwordHash`
 
 **Vulnerable Code:**
 ```java
@@ -180,7 +188,14 @@ public void setPassword(User user, String rawPassword) {
 ```
 
 **Why Exploitable:**
-MD5 is computationally trivial to reverse via precomputed rainbow tables. No salt means identical passwords produce identical hashes. Tools like hashcat can crack MD5 hashes at billions per second. Any database breach immediately exposes all user passwords.
+MD5 is computationally trivial to reverse via precomputed rainbow tables. No salt means identical passwords produce identical hashes. Tools like hashcat crack MD5 at billions of hashes per second. Any database breach immediately exposes all user passwords.
+
+**Proof-of-Concept:**
+No HTTP request needed; password cracking after DB dump:
+```
+hashcat -a 0 -m 0 hashes.txt rockyou.txt
+# MD5("password") = 5f4dcc3b5aa765d61d8327deb882cf99 — cracks in <1s
+```
 
 **Remediation:**
 ```java
@@ -193,5 +208,10 @@ public void setPassword(User user, String rawPassword) {
 ```
 Configure `BCryptPasswordEncoder` with strength ≥ 12 for new deployments.
 
-**References:** CWE-916, OWASP A02:2021
+**References:** https://cwe.mitre.org/data/definitions/916.html, OWASP A02:2021
+```
+
+JSONL line (append to `.github/sast-findings.jsonl`):
+```json
+{"id":"CRYPTO-001","skill":"sast-crypto","cwe":"CWE-916","owasp":"A02:2021-Cryptographic Failures","severity":"Critical","confidence":"High","file":"src/main/java/com/example/UserService.java","line":78,"method":"setPassword","class":"com.example.UserService","evidence":"MessageDigest md = MessageDigest.getInstance(\"MD5\");\nbyte[] hash = md.digest(rawPassword.getBytes());","sink":"MessageDigest.getInstance(\"MD5\")","source":"rawPassword parameter","taint_path":[],"sanitizer_present":false,"sanitizer_detail":"","remediation":"Replace with BCryptPasswordEncoder.encode(rawPassword) with strength >= 12","references":["https://cwe.mitre.org/data/definitions/916.html"],"false_positive_indicators":[],"duplicate_of":null}
 ```

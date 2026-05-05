@@ -169,18 +169,22 @@ For confirmed sinks, the following payloads demonstrate exploitability:
 
 ---
 
-## Finding Format Example
+## Finding Format
+
+Follow the canonical format from `copilot-instructions.md`. Example:
 
 ```
 ### [CRITICAL] Path Traversal — Arbitrary File Read via Download Endpoint
 
+**ID:** PATH-001
 **File:** `src/main/java/com/example/FileController.java:44`
-**CWE:** CWE-22
-**CVSS:** 9.1 (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N)
+**CWE:** CWE-22 | **OWASP:** A01:2021-Broken Access Control
+**CVSS (estimated):** 9.1 (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N)
+**Confidence:** High
+**Skill:** `sast-pathtraversal`
 
 **Taint Path:**
-GET /api/files/download?filename=X → FileController.download(filename) → new File(baseDir, filename) → Files.readAllBytes()
-No canonical path check performed.
+`GET /api/files/download?filename=X` → `FileController.download(@RequestParam filename) (FileController.java:41)` → `new File("/var/app/uploads/" + filename) (FileController.java:44)` → `Files.readAllBytes(file.toPath()) (FileController.java:45)` — no canonical path check
 
 **Vulnerable Code:**
 ```java
@@ -194,29 +198,31 @@ public ResponseEntity<byte[]> download(@RequestParam String filename) throws IOE
 }
 ```
 
-**Proof of Concept:**
-```
+**Why Exploitable:**
+`filename` is taken from `@RequestParam` and concatenated directly into a `File` path without a canonical-path containment check. An attacker uses `../` sequences (or URL-encoded variants) to escape the `/var/app/uploads/` directory and read arbitrary files accessible to the JVM process.
+
+**Proof-of-Concept:**
+```http
 GET /api/files/download?filename=../../../etc/passwd HTTP/1.1
 GET /api/files/download?filename=..%2F..%2F..%2Fetc%2Fshadow HTTP/1.1
 GET /api/files/download?filename=../../../proc/self/environ HTTP/1.1
 ```
-
-**Zip Slip Variant (if applicable):**
-If uploads accepts ZIP files and extracts them, create a ZIP with entry `../../.bashrc`.
+Zip Slip variant: if the endpoint also extracts ZIP uploads, supply a ZIP entry named `../../.bashrc`.
 
 **Remediation:**
 ```java
-@GetMapping("/api/files/download")
-public ResponseEntity<byte[]> download(@RequestParam String filename) throws IOException {
-    File base = new File("/var/app/uploads/").getCanonicalFile();
-    File target = new File(base, filename).getCanonicalFile();
-    if (!target.getPath().startsWith(base.getPath() + File.separator)) {
-        throw new SecurityException("Path traversal attempt detected");
-    }
-    byte[] content = Files.readAllBytes(target.toPath());
-    return ResponseEntity.ok().body(content);
+File base = new File("/var/app/uploads/").getCanonicalFile();
+File target = new File(base, filename).getCanonicalFile();
+if (!target.getPath().startsWith(base.getPath() + File.separator)) {
+    throw new SecurityException("Path traversal attempt detected");
 }
+byte[] content = Files.readAllBytes(target.toPath());
 ```
 
-**References:** CWE-22, OWASP A01:2021
+**References:** https://cwe.mitre.org/data/definitions/22.html, OWASP A01:2021
+```
+
+JSONL line (append to `.github/sast-findings.jsonl`):
+```json
+{"id":"PATH-001","skill":"sast-pathtraversal","cwe":"CWE-22","owasp":"A01:2021-Broken Access Control","severity":"Critical","confidence":"High","file":"src/main/java/com/example/FileController.java","line":44,"method":"download","class":"com.example.FileController","evidence":"File file = new File(\"/var/app/uploads/\" + filename);\nbyte[] content = Files.readAllBytes(file.toPath());","sink":"Files.readAllBytes()","source":"@RequestParam String filename","taint_path":[],"sanitizer_present":false,"sanitizer_detail":"","remediation":"Use getCanonicalFile() and assert target path starts with base path before reading","references":["https://cwe.mitre.org/data/definitions/22.html"],"false_positive_indicators":[],"duplicate_of":null}
 ```

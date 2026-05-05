@@ -127,20 +127,64 @@ Only report if the code shows the server would accept or act on the abusive requ
 
 ## Finding Format
 
-Emit findings using `.github/schemas/finding.schema.json`.
+Follow the canonical format from `copilot-instructions.md`. Example:
 
-Use skill value: `sast-api-abuse`.
+```
+### [HIGH] API Abuse — Token Not Invalidated After Use (Replay Attack)
 
-Recommended ID prefix: `APIABUSE-001`.
+**ID:** APIABUSE-001
+**File:** `src/main/java/com/example/PasswordResetService.java:58`
+**CWE:** CWE-613 | **OWASP:** A07:2021-Identification and Authentication Failures
+**CVSS (estimated):** 8.1 (AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:N)
+**Confidence:** High
+**Skill:** `sast-api-abuse`
 
-Common CWEs:
+**Taint Path:**
+`POST /api/password-reset {"token":"X","newPassword":"Y"}` → `PasswordResetService.reset(token) (PasswordResetService.java:54)` → `tokenRepo.findByToken(token) (PasswordResetService.java:56)` → password updated → token **not deleted** `(PasswordResetService.java:58-62)`
 
-- `CWE-639` for IDOR / user-controlled key authorization bypass
-- `CWE-863` for incorrect authorization
-- `CWE-284` for improper access control
-- `CWE-352` for CSRF-like browser abuse
-- `CWE-613` for session/token expiration bugs
-- `CWE-200` for excessive data exposure
+**Vulnerable Code:**
+```java
+public void reset(String token, String newPassword) {
+    ResetToken rt = tokenRepo.findByToken(token).orElseThrow();
+    userRepo.updatePassword(rt.getUserId(), encode(newPassword));
+    // Token is never deleted or marked used — replayable indefinitely
+}
+```
+
+**Why Exploitable:**
+The reset token is validated but never invalidated after use. An attacker who intercepts or obtains the token can replay it to change the password again at any time, effectively maintaining persistent account access.
+
+**Proof-of-Concept:**
+```http
+POST /api/password-reset HTTP/1.1
+Content-Type: application/json
+
+{"token":"abc123","newPassword":"firstReset"}
+
+# Same token reused:
+POST /api/password-reset HTTP/1.1
+{"token":"abc123","newPassword":"secondReset"}  # succeeds
+```
+
+**Remediation:**
+```java
+public void reset(String token, String newPassword) {
+    ResetToken rt = tokenRepo.findByToken(token).orElseThrow();
+    userRepo.updatePassword(rt.getUserId(), encode(newPassword));
+    tokenRepo.delete(rt);  // invalidate immediately after use
+}
+```
+
+**References:** https://cwe.mitre.org/data/definitions/613.html, OWASP A07:2021
+```
+
+Use skill value `sast-api-abuse`. Recommended ID prefix: `APIABUSE-NNN`.
+Common CWEs: `CWE-639` (IDOR), `CWE-863` (incorrect authorization), `CWE-284` (improper access control), `CWE-613` (token expiry), `CWE-200` (excessive data exposure).
+
+JSONL line (append to `.github/sast-findings.jsonl`):
+```json
+{"id":"APIABUSE-001","skill":"sast-api-abuse","cwe":"CWE-613","owasp":"A07:2021-Identification and Authentication Failures","severity":"High","confidence":"High","file":"src/main/java/com/example/PasswordResetService.java","line":58,"method":"reset","class":"com.example.PasswordResetService","evidence":"userRepo.updatePassword(rt.getUserId(), encode(newPassword));\n// Token is never deleted or marked used","sink":"password updated without token invalidation","source":"POST /api/password-reset token parameter","taint_path":[],"sanitizer_present":false,"sanitizer_detail":"","remediation":"Call tokenRepo.delete(rt) immediately after successful password update","references":["https://cwe.mitre.org/data/definitions/613.html"],"false_positive_indicators":["token has short expiry enforced at DB level"],"duplicate_of":null}
+```
 
 ---
 

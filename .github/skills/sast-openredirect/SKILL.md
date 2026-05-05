@@ -155,17 +155,22 @@ grep -rn "DefaultRedirectStrategy\|SimpleUrlAuthenticationSuccessHandler\|HttpSt
 
 ---
 
-## Finding Format Example
+## Finding Format
+
+Follow the canonical format from `copilot-instructions.md`. Example:
 
 ```
 ### [HIGH] Open Redirect — User-Controlled Redirect After Login
 
+**ID:** REDIRECT-001
 **File:** `src/main/java/com/example/AuthController.java:78`
-**CWE:** CWE-601
-**CVSS:** 7.4 (AV:N/AC:L/PR:N/UI:R/S:C/C:H/I:N/A:N)
+**CWE:** CWE-601 | **OWASP:** A01:2021-Broken Access Control
+**CVSS (estimated):** 7.4 (AV:N/AC:L/PR:N/UI:R/S:C/C:H/I:N/A:N)
+**Confidence:** High
+**Skill:** `sast-openredirect`
 
 **Taint Path:**
-POST /login?returnTo=X → AuthController.login(returnTo) → response.sendRedirect(returnTo)
+`POST /login?returnTo=X` → `AuthController.login(@RequestParam returnTo) (AuthController.java:75)` → `response.sendRedirect(returnTo) (AuthController.java:78)` — no host or path validation
 
 **Vulnerable Code:**
 ```java
@@ -177,34 +182,33 @@ public void login(@RequestParam String username, @RequestParam String password,
 }
 ```
 
-**Proof of Concept:**
-```
-# After clicking this link, user is redirected to attacker site after login
-https://example.com/login?returnTo=https://evil.com/steal-tokens
-# Protocol-relative bypass (if only "/" check is present):
-https://example.com/login?returnTo=//evil.com/steal-tokens
+**Why Exploitable:**
+`returnTo` is taken directly from the query string and passed to `sendRedirect` without any host or scheme validation. After successful authentication the browser follows the redirect, sending the user (and any post-auth tokens in the URL) to the attacker's domain. Protocol-relative URLs (`//evil.com`) bypass simple `startsWith("/")` checks.
+
+**Proof-of-Concept:**
+```http
+GET https://example.com/login?returnTo=https://evil.com/steal-tokens
+# Protocol-relative bypass when only "/" check is present:
+GET https://example.com/login?returnTo=//evil.com/steal-tokens
 ```
 
 **Remediation:**
 ```java
-@PostMapping("/login")
-public void login(@RequestParam String username, @RequestParam String password,
-                  @RequestParam String returnTo, HttpServletResponse response) throws IOException {
-    authService.authenticate(username, password);
-    // Validate returnTo is a relative path on this server
-    String safeReturn = validateReturnUrl(returnTo);
-    response.sendRedirect(safeReturn);
-}
-
 private String validateReturnUrl(String url) {
     if (url == null || !url.startsWith("/") || url.startsWith("//")) {
         return "/dashboard";  // default safe redirect
     }
     return url;
 }
+// Call: response.sendRedirect(validateReturnUrl(returnTo));
 ```
 
-**References:** CWE-601, OWASP A01:2021
+**References:** https://cwe.mitre.org/data/definitions/601.html, OWASP A01:2021
+```
+
+JSONL line (append to `.github/sast-findings.jsonl`):
+```json
+{"id":"REDIRECT-001","skill":"sast-openredirect","cwe":"CWE-601","owasp":"A01:2021-Broken Access Control","severity":"High","confidence":"High","file":"src/main/java/com/example/AuthController.java","line":78,"method":"login","class":"com.example.AuthController","evidence":"response.sendRedirect(returnTo);","sink":"HttpServletResponse.sendRedirect()","source":"@RequestParam String returnTo","taint_path":[],"sanitizer_present":false,"sanitizer_detail":"","remediation":"Validate returnTo: reject if not starting with '/' or if starting with '//'","references":["https://cwe.mitre.org/data/definitions/601.html"],"false_positive_indicators":[],"duplicate_of":null}
 ```
 
 ---

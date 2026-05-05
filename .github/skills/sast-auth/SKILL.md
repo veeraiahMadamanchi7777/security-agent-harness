@@ -185,14 +185,22 @@ grep -rn "resetPassword\|forgotPassword\|sendResetEmail" --include="*.java" -B5 
 
 ---
 
-## Finding Format Example
+## Finding Format
+
+Follow the canonical format from `copilot-instructions.md`. Example:
 
 ```
-### [CRITICAL] Auth Bypass — JWT Signature Not Verified
+### [CRITICAL] Auth Bypass — JWT Signature Not Verified (alg:none)
 
+**ID:** AUTH-001
 **File:** `src/main/java/com/example/JwtFilter.java:58`
-**CWE:** CWE-345
-**CVSS:** 9.1 (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N)
+**CWE:** CWE-345 | **OWASP:** A02:2021-Cryptographic Failures
+**CVSS (estimated):** 9.1 (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N)
+**Confidence:** High
+**Skill:** `sast-auth`
+
+**Taint Path:**
+`Authorization: Bearer <token>` → `JwtFilter.doFilterInternal() (JwtFilter.java:52)` → `Jwts.parser().parseClaimsJwt(token) (JwtFilter.java:58)` — signature never verified
 
 **Vulnerable Code:**
 ```java
@@ -204,14 +212,16 @@ String username = claims.getSubject();
 // User is now authenticated with the username in the token, no signature verified
 ```
 
-**Proof of Concept:**
-Create a JWT with arbitrary claims, no signature:
+**Why Exploitable:**
+`parseClaimsJwt` accepts unsigned (alg:none) JWTs without verifying any signature. An attacker crafts a token with arbitrary `sub` and `role` claims, signs with no key, and is authenticated as any user including admins.
+
+**Proof-of-Concept:**
 ```python
-import base64, json
+import base64
 header = base64.urlsafe_b64encode(b'{"alg":"none","typ":"JWT"}').rstrip(b'=')
 payload = base64.urlsafe_b64encode(b'{"sub":"admin","role":"ADMIN"}').rstrip(b'=')
 token = header.decode() + '.' + payload.decode() + '.'
-# Use token in Authorization: Bearer <token>
+# Send: Authorization: Bearer <token>
 ```
 
 **Remediation:**
@@ -223,5 +233,10 @@ Claims claims = Jwts.parserBuilder()
     .getBody();
 ```
 
-**References:** CWE-345, CVE-2015-9235 (algorithm confusion pattern)
+**References:** https://cwe.mitre.org/data/definitions/345.html, CVE-2015-9235, OWASP A02:2021
+```
+
+JSONL line (append to `.github/sast-findings.jsonl`):
+```json
+{"id":"AUTH-001","skill":"sast-auth","cwe":"CWE-345","owasp":"A02:2021-Cryptographic Failures","severity":"Critical","confidence":"High","file":"src/main/java/com/example/JwtFilter.java","line":58,"method":"doFilterInternal","class":"com.example.JwtFilter","evidence":"Claims claims = Jwts.parser()\n    .parseClaimsJwt(token)\n    .getBody();","sink":"Jwts.parser().parseClaimsJwt()","source":"Authorization header token","taint_path":[],"sanitizer_present":false,"sanitizer_detail":"","remediation":"Replace parseClaimsJwt with Jwts.parserBuilder().setSigningKey(...).build().parseClaimsJws(token)","references":["https://cwe.mitre.org/data/definitions/345.html","CVE-2015-9235"],"false_positive_indicators":[],"duplicate_of":null}
 ```

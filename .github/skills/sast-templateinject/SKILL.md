@@ -84,16 +84,56 @@ Weak defenses:
 
 ## Finding Format
 
-Emit findings using `.github/schemas/finding.schema.json`.
+Follow the canonical format from `copilot-instructions.md`. Example:
 
-Recommended CWE: `CWE-1336`.
+```
+### [CRITICAL] Template Injection — User Input Used as Thymeleaf Template Expression
 
-Example sink names:
+**ID:** SSTI-001
+**File:** `src/main/java/com/example/GreetingController.java:31`
+**CWE:** CWE-1336 | **OWASP:** A03:2021-Injection
+**CVSS (estimated):** 9.8 (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H)
+**Confidence:** High
+**Skill:** `sast-templateinject`
 
-- `SpelExpressionParser.parseExpression().getValue()`
-- `VelocityEngine.evaluate()`
-- `freemarker.template.Template.process()`
-- `TemplateEngine.process()`
+**Taint Path:**
+`GET /greet?name=X` → `GreetingController.greet(@RequestParam name) (GreetingController.java:29)` → `return "Hello " + name;` used as Thymeleaf view name `(GreetingController.java:31)` → template engine evaluates expressions in name
+
+**Vulnerable Code:**
+```java
+@GetMapping("/greet")
+public String greet(@RequestParam String name, Model model) {
+    return "Hello " + name;  // ← returned as view name, not model data
+}
+```
+
+**Why Exploitable:**
+When a Spring MVC controller returns a `String`, Thymeleaf interprets it as a view name and evaluates it as a template. If `name` contains Thymeleaf expression syntax (e.g., `__${T(java.lang.Runtime).getRuntime().exec('id')}__`), the engine executes the expression server-side, achieving RCE.
+
+**Proof-of-Concept:**
+```http
+GET /greet?name=__${T(java.lang.Runtime).getRuntime().exec('id')}__ HTTP/1.1
+```
+
+**Remediation:**
+Return a static view name and pass user input via the `Model`:
+```java
+@GetMapping("/greet")
+public String greet(@RequestParam String name, Model model) {
+    model.addAttribute("name", name);  // name is model data, not template
+    return "greetingView";             // static view name
+}
+```
+
+**References:** https://cwe.mitre.org/data/definitions/1336.html, OWASP A03:2021
+```
+
+Recommended sink names: `SpelExpressionParser.parseExpression().getValue()`, `VelocityEngine.evaluate()`, `freemarker.template.Template.process()`, `TemplateEngine.process()`
+
+JSONL line (append to `.github/sast-findings.jsonl`):
+```json
+{"id":"SSTI-001","skill":"sast-templateinject","cwe":"CWE-1336","owasp":"A03:2021-Injection","severity":"Critical","confidence":"High","file":"src/main/java/com/example/GreetingController.java","line":31,"method":"greet","class":"com.example.GreetingController","evidence":"return \"Hello \" + name;","sink":"Thymeleaf view name evaluated as template","source":"@RequestParam String name","taint_path":[],"sanitizer_present":false,"sanitizer_detail":"","remediation":"Return a static view name string; pass name as model attribute only","references":["https://cwe.mitre.org/data/definitions/1336.html"],"false_positive_indicators":[],"duplicate_of":null}
+```
 
 ---
 

