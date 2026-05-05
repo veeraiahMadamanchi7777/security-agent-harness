@@ -1,5 +1,9 @@
 # SKILL: sast-secrets — Hardcoded Credentials & Secret Detection
 
+## References
+
+Load [`references/java-secrets.md`](references/java-secrets.md) at the start of this skill for credential patterns by provider, entropy-based detection guidance, safe placeholder patterns, severity table, and rotation checklist.
+
 ## Purpose
 
 Identify hardcoded API keys, passwords, tokens, cryptographic keys, and connection strings embedded in source code, configuration files, and tests. Distinguish true positives from intentional test/placeholder values.

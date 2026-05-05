@@ -1,5 +1,9 @@
 # SKILL: sast-crypto — Weak Cryptography Detection
 
+## References
+
+Load [`references/java-crypto.md`](references/java-crypto.md) at the start of this skill for algorithm risk table, weak/safe API comparisons, key management patterns, TLS misconfigurations, and recommended algorithm reference.
+
 ## Purpose
 
 Identify weak or broken cryptographic algorithms, insecure key management, poor random number generation, and homemade crypto implementations in Java applications.

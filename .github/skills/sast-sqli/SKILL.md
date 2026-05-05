@@ -1,5 +1,9 @@
 # SKILL: sast-sqli — SQL Injection Detection
 
+## References
+
+Load [`references/java-sqli.md`](references/java-sqli.md) at the start of this skill for sink API risk table, safe API list, MyBatis `${}` vs `#{}` distinction, ordering clause injection, JPQL injection payloads, and second-order SQLi patterns.
+
 ## Purpose
 
 Identify SQL injection vulnerabilities in Java applications by tracing attacker-controlled input from HTTP entry points through to SQL execution sinks. Distinguish exploitable injections from correctly-parameterized queries.

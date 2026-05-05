@@ -1,5 +1,9 @@
 # SKILL: sast-attack-chain — Exploit Chain & Compound Risk Analysis
 
+## References
+
+Load [`references/java-attack-chain.md`](references/java-attack-chain.md) at the start of this skill for common chain archetypes (open redirect→OAuth, SSRF→metadata, deserialization→RCE, path traversal→config read, JWT secret→token forge, mass assignment→privilege escalation), chain validation checklist, severity escalation rules, and taint path documentation format.
+
 ## Purpose
 
 Identify cases where individually moderate findings combine into a higher-impact exploit chain. This skill reads Phase 2 findings and source context, then reasons like a security researcher about attacker progression.

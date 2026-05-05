@@ -1,5 +1,9 @@
 # SKILL: sast-pathtraversal — Path Traversal & File Operation Detection
 
+## References
+
+Load [`references/java-path.md`](references/java-path.md) at the start of this skill for file operation sink table, taint source list, unsafe/safe canonicalization patterns, Zip Slip detection, traversal payload sequences, Windows/null-byte/encoding edge cases, and confidence scoring rules.
+
 ## Purpose
 
 Identify file system operations where attacker-controlled input determines file paths, enabling directory traversal to read, write, or delete arbitrary files outside the intended directory.

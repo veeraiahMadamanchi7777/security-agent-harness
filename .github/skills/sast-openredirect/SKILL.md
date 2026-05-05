@@ -1,5 +1,9 @@
 # SKILL: sast-openredirect — Open Redirect Detection
 
+## References
+
+Load [`references/java-openredirect.md`](references/java-openredirect.md) at the start of this skill for redirect sink table, high-risk parameter names, bypass techniques, safe validation patterns, OAuth redirect_uri validation, and false positives.
+
 ## Purpose
 
 Identify endpoints that redirect users to attacker-controlled URLs, enabling phishing attacks, OAuth token theft, and credential harvesting by exploiting user trust in the legitimate domain.

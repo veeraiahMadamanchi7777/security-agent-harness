@@ -1,5 +1,9 @@
 # SKILL: sast-ssrf — Server-Side Request Forgery Detection
 
+## References
+
+Load [`references/java-ssrf.md`](references/java-ssrf.md) at the start of this skill for HTTP client sink table, bypass techniques, cloud metadata targets, and safe validation patterns.
+
 ## Purpose
 
 Identify code paths where attacker-supplied URLs, hostnames, or IP addresses cause the server to make outbound HTTP/TCP requests, potentially reaching internal services, cloud metadata APIs, or localhost-bound services.

@@ -1,5 +1,9 @@
 # SKILL: sast-massassignment — Mass Assignment Detection
 
+## References
+
+Load [`references/java-massassignment.md`](references/java-massassignment.md) at the start of this skill for binding sink table, high-risk field list, DTO/Jackson/InitBinder/ModelMapper defense patterns, and false positives.
+
 ## Purpose
 
 Identify endpoints that bind attacker-controlled request bodies directly into domain entities or privileged DTO fields, allowing users to set fields such as roles, ownership, account status, prices, or approval flags.

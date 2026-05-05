@@ -1,5 +1,9 @@
 # SKILL: sast-templateinject — Server-Side Template Injection Detection
 
+## References
+
+Load [`references/java-templateinject.md`](references/java-templateinject.md) at the start of this skill for engine-specific sink/safe patterns, Thymeleaf fragment injection, FreeMarker/Velocity/SpEL payloads, safe config examples, and confirmation steps.
+
 ## Purpose
 
 Identify Java code paths where attacker-controlled input is evaluated as a server-side template expression, enabling data disclosure, sandbox escape, or remote code execution.

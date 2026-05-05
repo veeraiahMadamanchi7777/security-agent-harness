@@ -1,5 +1,9 @@
 # SKILL: sast-csrf — Cross-Site Request Forgery Detection
 
+## References
+
+Load [`references/java-csrf.md`](references/java-csrf.md) at the start of this skill for Spring Security CSRF config states, SameSite cookie patterns, when CSRF is not needed, attack scenario templates, and token strength requirements.
+
 ## Purpose
 
 Identify CSRF vulnerabilities where state-changing operations lack token-based protection, allowing an attacker to trick an authenticated user's browser into making unauthorized requests on their behalf.

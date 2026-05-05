@@ -1,5 +1,9 @@
 # SKILL: sast-dependency — Vulnerable Dependency Detection
 
+## References
+
+Load [`references/java-dependency.md`](references/java-dependency.md) at the start of this skill for CVE family tables (Log4j, Spring, Struts, Shiro, XStream, Jackson, Commons Collections, SnakeYAML, Netty), reachability criteria, and dependency extraction patterns.
+
 ## Purpose
 
 Identify known-vulnerable Java dependencies in Maven and Gradle manifests, then determine whether the vulnerable library is likely reachable from application code before assigning severity.

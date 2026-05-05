@@ -1,5 +1,9 @@
 # SKILL: sast-api-abuse — API Abuse & Business Logic Research
 
+## References
+
+Load [`references/java-api-abuse.md`](references/java-api-abuse.md) at the start of this skill for horizontal/vertical authorization patterns, tenant isolation source table, token lifecycle flaws, excessive data exposure patterns, state machine bypass reference, and false positives.
+
 ## Purpose
 
 Find security flaws in API semantics that do not map cleanly to a single dangerous sink: authorization gaps, tenant breakout, replay, workflow bypass, excessive data exposure, and unsafe state transitions.

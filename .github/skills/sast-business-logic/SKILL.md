@@ -1,5 +1,9 @@
 # SKILL: sast-business-logic — Business Logic & Race Condition Detection
 
+## References
+
+Load [`references/java-business-logic.md`](references/java-business-logic.md) at the start of this skill for TOCTOU patterns, transaction isolation levels, locking recipes, numeric flaw examples, state machine bypass patterns, and false positive indicators.
+
 ## Purpose
 
 Identify vulnerabilities that arise from incorrect implementation of business rules, state machine invariants, concurrency issues, numeric edge cases, and workflow bypass opportunities. These are not traditional "injection" bugs — they require understanding the intended business behavior.

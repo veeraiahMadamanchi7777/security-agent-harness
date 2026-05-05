@@ -1,5 +1,9 @@
 # SKILL: sast-idor — Insecure Direct Object Reference Detection
 
+## References
+
+Load [`references/java-idor.md`](references/java-idor.md) at the start of this skill for ownership check patterns, multi-tenancy pitfalls, secure DTO patterns, and IDOR false positive indicators.
+
 ## Purpose
 
 Identify endpoints where attacker-controlled resource identifiers (IDs, UUIDs, filenames, tokens) are used to access or modify resources without verifying that the requesting user owns or has permission to access that specific resource.

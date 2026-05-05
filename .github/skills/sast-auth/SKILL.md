@@ -1,5 +1,9 @@
 # SKILL: sast-auth — Authentication & Authorization Bypass Detection
 
+## References
+
+Load [`references/java-auth.md`](references/java-auth.md) at the start of this skill for Spring Security URL pattern ordering, JWT algorithm confusion attacks, common JWT validation mistakes, session fixation, password hashing benchmarks, method security enablement, CSRF conditions, and CORS misconfiguration table.
+
 ## Purpose
 
 Identify authentication bypass, session management flaws, JWT vulnerabilities, privilege escalation, and authorization control gaps in Java applications.

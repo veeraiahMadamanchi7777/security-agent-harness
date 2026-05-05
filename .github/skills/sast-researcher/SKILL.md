@@ -1,5 +1,9 @@
 # SKILL: sast-researcher — AI-Assisted Security Research Patterns
 
+## References
+
+Load [`references/java-researcher.md`](references/java-researcher.md) at the start of this skill for variant analysis methodology, trust source table, parser differential patterns, stateful workflow abuse examples, hypothesis tracking template, and research automation grep patterns.
+
 ## Purpose
 
 Add a researcher-style review pass on top of the vulnerability-specific SAST skills. This skill uses semantic reasoning, hypothesis generation, variant analysis, and negative testing to find issues that simple grep patterns often miss.

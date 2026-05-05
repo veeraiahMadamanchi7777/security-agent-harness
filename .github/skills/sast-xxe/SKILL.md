@@ -1,5 +1,9 @@
 # SKILL: sast-xxe — XML External Entity Injection Detection
 
+## References
+
+Load [`references/java-xxe.md`](references/java-xxe.md) at the start of this skill for vulnerable parser table, complete hardening recipes (DocumentBuilderFactory, SAX, StAX, XStream, XMLDecoder), XXE payload library (file read, SSRF, blind OOB, Billion Laughs, XInclude), and Windows/Unix file targets.
+
 ## Purpose
 
 Identify XML parsers and XML-consuming endpoints in Java applications that are vulnerable to XXE (XML External Entity) attacks. XXE can lead to local file disclosure, SSRF, denial of service, and in some configurations remote code execution.

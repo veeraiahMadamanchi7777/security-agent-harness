@@ -1,5 +1,9 @@
 # SKILL: sast-rce — Remote Code Execution Detection
 
+## References
+
+Load [`references/java-rce.md`](references/java-rce.md) at the start of this skill for OS command sinks, shell metacharacters to block, SpEL/EL/template engine sinks, reflection sinks, JNDI injection patterns, SpEL/FreeMarker/Velocity payloads, and safe alternatives.
+
 ## Purpose
 
 Identify code paths where attacker-controlled input reaches OS command execution, Java reflection, expression language evaluation, scripting engines, or code generation sinks that can result in arbitrary code execution.

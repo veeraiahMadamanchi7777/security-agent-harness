@@ -1,5 +1,9 @@
 # SKILL: sast-deserial — Deserialization Vulnerability Detection
 
+## References
+
+Load [`references/java-deserial.md`](references/java-deserial.md) at the start of this skill for deserialization sink table, gadget chain library matrix, ysoserial usage, ObjectInputFilter patterns, and deserialization input surfaces.
+
 ## Purpose
 
 Identify Java deserialization sinks that can be exploited via gadget chains to achieve Remote Code Execution or other critical impacts. Focus on both native Java serialization (`ObjectInputStream`) and third-party serialization libraries (XStream, Kryo, Jackson polymorphic, Hessian, etc.).
