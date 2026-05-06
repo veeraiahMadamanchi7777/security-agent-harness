@@ -1,5 +1,5 @@
 ---
-name: Security Researcher
+name: security-researcher
 description: Deep adversarial research — hypothesis generation, variant analysis, exploit chains, and API abuse patterns beyond automated scanning.
 tools: ['search/codebase', 'search/usages', 'web/fetch', 'read/file', 'read/directory']
 handoffs:

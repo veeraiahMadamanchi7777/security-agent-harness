@@ -1,3 +1,8 @@
+---
+name: sast-csrf
+description: Review Java web applications for CSRF vulnerabilities in cookie-authenticated state-changing endpoints.
+---
+
 # SKILL: sast-csrf — Cross-Site Request Forgery Detection
 
 ## References

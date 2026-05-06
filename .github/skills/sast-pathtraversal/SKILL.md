@@ -1,3 +1,8 @@
+---
+name: sast-pathtraversal
+description: Detect Java path traversal, arbitrary file read/write/delete, archive extraction, and unsafe upload/download handling.
+---
+
 # SKILL: sast-pathtraversal — Path Traversal & File Operation Detection
 
 ## References

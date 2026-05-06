@@ -1,3 +1,8 @@
+---
+name: sast-massassignment
+description: Detect unsafe Java request binding that lets clients set sensitive fields or nested objects.
+---
+
 # SKILL: sast-massassignment — Mass Assignment Detection
 
 ## References

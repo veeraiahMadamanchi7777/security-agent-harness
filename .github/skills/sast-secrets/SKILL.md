@@ -1,3 +1,8 @@
+---
+name: sast-secrets
+description: Detect hardcoded credentials, tokens, private keys, secret material, and sensitive configuration leaks.
+---
+
 # SKILL: sast-secrets — Hardcoded Credentials & Secret Detection
 
 ## References

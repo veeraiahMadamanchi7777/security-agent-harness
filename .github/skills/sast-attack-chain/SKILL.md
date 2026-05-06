@@ -1,3 +1,8 @@
+---
+name: sast-attack-chain
+description: Combine individual Java security findings into realistic compound exploit chains and prioritize systemic fixes.
+---
+
 # SKILL: sast-attack-chain — Exploit Chain & Compound Risk Analysis
 
 ## References

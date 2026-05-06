@@ -1,3 +1,8 @@
+---
+name: sast-analysis
+description: Map Java application architecture, entry points, trust boundaries, security controls, and data flows before vulnerability-specific review.
+---
+
 # SKILL: sast-analysis — Architecture Recon & Entry Point Mapping
 
 ## Purpose

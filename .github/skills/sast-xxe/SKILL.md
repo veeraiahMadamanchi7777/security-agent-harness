@@ -1,3 +1,8 @@
+---
+name: sast-xxe
+description: Detect XML External Entity, DTD, schema, XSLT, and XML parser hardening flaws in Java.
+---
+
 # SKILL: sast-xxe — XML External Entity Injection Detection
 
 ## References

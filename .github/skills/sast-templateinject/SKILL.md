@@ -1,3 +1,8 @@
+---
+name: sast-templateinject
+description: Detect server-side template injection and unsafe expression rendering in Java template engines.
+---
+
 # SKILL: sast-templateinject — Server-Side Template Injection Detection
 
 ## References

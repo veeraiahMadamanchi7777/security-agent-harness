@@ -35,6 +35,16 @@ Use `.github/copilot-instructions.md` as always-on policy for scope, severity, e
    - `sast-business-logic`
    - `sast-secrets`
    - `sast-csrf`
+   - `sast-xss`
+   - `sast-cors`
+   - `sast-oauth`
+   - `sast-graphql`
+   - `sast-websocket`
+   - `sast-ldap`
+   - `sast-file-upload`
+   - `sast-cache`
+   - `sast-headers`
+   - `sast-logging`
    - `sast-openredirect`
    - `sast-templateinject`
    - `sast-massassignment`

@@ -1,3 +1,8 @@
+---
+name: sast-sqli
+description: Detect exploitable SQL, JPQL, HQL, native query, and NoSQL injection in Java applications.
+---
+
 # SKILL: sast-sqli — SQL Injection Detection
 
 ## References

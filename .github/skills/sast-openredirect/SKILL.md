@@ -1,3 +1,8 @@
+---
+name: sast-openredirect
+description: Detect open redirect and forward vulnerabilities in Java controllers and authentication flows.
+---
+
 # SKILL: sast-openredirect — Open Redirect Detection
 
 ## References

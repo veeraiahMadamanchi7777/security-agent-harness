@@ -21,7 +21,11 @@
         "sast-ssrf", "sast-crypto", "sast-deserial", "sast-pathtraversal",
         "sast-business-logic", "sast-secrets", "sast-csrf", "sast-openredirect",
         "sast-templateinject", "sast-massassignment", "sast-dependency",
-        "sast-researcher", "sast-api-abuse", "sast-attack-chain"
+        "sast-researcher", "sast-api-abuse", "sast-attack-chain",
+        "sast-function-tree", "sast-function-review", "sast-taint-tree",
+        "sast-xss", "sast-cors", "sast-oauth", "sast-graphql",
+        "sast-websocket", "sast-ldap", "sast-file-upload",
+        "sast-cache", "sast-headers", "sast-logging"
       ]
     },
     "cwe": {

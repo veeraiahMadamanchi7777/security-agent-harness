@@ -28,7 +28,13 @@ Run `sast-analysis` first.
 
 ## Phase 2 — Vulnerability Analysis
 
-Run these skills after Phase 1. They may run independently or in parallel when the agent supports parallel work:
+Run the human-depth function review skills first:
+
+- `sast-function-tree`
+- `sast-function-review`
+- `sast-taint-tree`
+
+Then run these vulnerability skills. They may run independently or in parallel when the agent supports parallel work:
 
 - `sast-sqli`
 - `sast-rce`
@@ -42,6 +48,16 @@ Run these skills after Phase 1. They may run independently or in parallel when t
 - `sast-business-logic`
 - `sast-secrets`
 - `sast-csrf`
+- `sast-xss`
+- `sast-cors`
+- `sast-oauth`
+- `sast-graphql`
+- `sast-websocket`
+- `sast-ldap`
+- `sast-file-upload`
+- `sast-cache`
+- `sast-headers`
+- `sast-logging`
 - `sast-openredirect`
 - `sast-templateinject`
 - `sast-massassignment`
@@ -53,10 +69,11 @@ Run these skills after Phase 1. They may run independently or in parallel when t
 For each skill:
 
 1. Read `.github/sast-context.md` if present; otherwise perform standalone analysis.
-2. Use the skill's `SKILL.md` and any relevant `references/` files.
-3. Taint-track source to sink before reporting. For researcher-style skills, verify each semantic abuse path with file and line evidence.
-4. Emit only confirmed or strongly supported findings.
-5. Append one JSON object per finding to `.github/sast-findings.jsonl`, conforming to `.github/schemas/finding.schema.json`.
+2. Read `.github/sast-function-tree.md`, `.github/sast-function-review.md`, and `.github/sast-taint-trees.md` when present.
+3. Use the skill's `SKILL.md` and any relevant `references/` files.
+4. Taint-track source to sink before reporting. For researcher-style skills, verify each semantic abuse path with file and line evidence.
+5. Emit only confirmed or strongly supported findings.
+6. Append one JSON object per finding to `.github/sast-findings.jsonl`, conforming to `.github/schemas/finding.schema.json`.
 
 If no findings are confirmed for a skill, record a short note in the final report's coverage section instead of fabricating a finding.
 

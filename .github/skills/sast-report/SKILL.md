@@ -1,14 +1,24 @@
+---
+name: sast-report
+description: Consolidate Java SAST skill outputs into a deduplicated, severity-ranked security report.
+---
+
 # SKILL: sast-report — Finding Consolidation & Risk Ranking
 
 ## Purpose
 
 Phase 3 of the security pipeline. Consolidate Phase 2 finding output, validate it against `.github/schemas/finding.schema.json`, deduplicate overlapping findings, rank by exploitability, and produce a final report that engineers can act on.
 
+Use `.github/sast-function-tree.md`, `.github/sast-function-review.md`, and `.github/sast-taint-trees.md` when present to explain coverage, reachability, and source-to-sink evidence.
+
 ---
 
 ## Inputs
 
 - `.github/sast-context.md` — Phase 1 architecture context, if available
+- `.github/sast-function-tree.md` — function and entry-point call tree, if available
+- `.github/sast-function-review.md` — per-function human review notes, if available
+- `.github/sast-taint-trees.md` — source-to-sink taint trees, if available
 - `.github/sast-findings.jsonl` — one JSON object per Phase 2 finding
 - `.github/schemas/finding.schema.json` — required normalized finding schema
 - Source files referenced by each finding, used to verify evidence and line numbers

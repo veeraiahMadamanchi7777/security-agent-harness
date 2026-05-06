@@ -1,3 +1,8 @@
+---
+name: sast-auth
+description: Review Java authentication, sessions, JWTs, authorization configuration, privilege checks, and access-control bypasses.
+---
+
 # SKILL: sast-auth — Authentication & Authorization Bypass Detection
 
 ## References

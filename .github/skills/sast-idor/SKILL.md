@@ -1,3 +1,8 @@
+---
+name: sast-idor
+description: Find insecure direct object reference and object-level authorization flaws in Java web applications and APIs.
+---
+
 # SKILL: sast-idor — Insecure Direct Object Reference Detection
 
 ## References

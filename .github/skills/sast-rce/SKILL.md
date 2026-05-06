@@ -1,3 +1,8 @@
+---
+name: sast-rce
+description: Detect Java command injection, unsafe process execution, script evaluation, reflection abuse, and expression execution.
+---
+
 # SKILL: sast-rce — Remote Code Execution Detection
 
 ## References

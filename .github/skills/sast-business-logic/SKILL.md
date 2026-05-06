@@ -1,3 +1,8 @@
+---
+name: sast-business-logic
+description: Review Java applications for broken invariants, workflow bypasses, race conditions, quota abuse, and state-machine flaws.
+---
+
 # SKILL: sast-business-logic — Business Logic & Race Condition Detection
 
 ## References

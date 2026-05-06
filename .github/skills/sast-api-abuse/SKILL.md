@@ -1,3 +1,8 @@
+---
+name: sast-api-abuse
+description: Review Java APIs for abuse cases including missing rate limits, enumeration, replay, excessive data exposure, and workflow manipulation.
+---
+
 # SKILL: sast-api-abuse — API Abuse & Business Logic Research
 
 ## References

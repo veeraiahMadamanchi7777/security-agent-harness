@@ -1,3 +1,8 @@
+---
+name: sast-ssrf
+description: Detect server-side request forgery in Java URL fetching, webhooks, importers, proxy endpoints, and cloud metadata access paths.
+---
+
 # SKILL: sast-ssrf — Server-Side Request Forgery Detection
 
 ## References

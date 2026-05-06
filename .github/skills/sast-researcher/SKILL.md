@@ -1,3 +1,8 @@
+---
+name: sast-researcher
+description: Generate and test security hypotheses when direct pattern review is insufficient or a finding needs variant analysis.
+---
+
 # SKILL: sast-researcher — AI-Assisted Security Research Patterns
 
 ## References

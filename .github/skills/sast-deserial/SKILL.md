@@ -1,3 +1,8 @@
+---
+name: sast-deserial
+description: Detect unsafe Java deserialization and polymorphic object binding vulnerabilities.
+---
+
 # SKILL: sast-deserial — Deserialization Vulnerability Detection
 
 ## References

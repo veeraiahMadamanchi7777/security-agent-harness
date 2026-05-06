@@ -1,3 +1,8 @@
+---
+name: sast-crypto
+description: Review Java cryptography for weak algorithms, bad modes, key handling, insecure randomness, and broken password storage.
+---
+
 # SKILL: sast-crypto — Weak Cryptography Detection
 
 ## References

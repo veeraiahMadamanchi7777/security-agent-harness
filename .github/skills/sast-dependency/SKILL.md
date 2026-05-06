@@ -1,3 +1,8 @@
+---
+name: sast-dependency
+description: Review Java dependency manifests for known vulnerable libraries and risky version ranges.
+---
+
 # SKILL: sast-dependency — Vulnerable Dependency Detection
 
 ## References
