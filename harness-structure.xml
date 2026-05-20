@@ -1,0 +1,369 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Security Agent Harness — Structured XML Representation
+  Machine-readable view of all agents, skills, prompts, hooks, and pipeline configuration.
+-->
+<security-harness version="1.0" target="java">
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- GLOBAL CONFIGURATION                                 -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <global-config file=".github/copilot-instructions.md">
+    <role>Senior application security engineer performing static analysis on Java codebases</role>
+
+    <severity-definitions>
+      <severity level="Critical" cvss="9.0-10.0">Remote, unauthenticated, exploitable with a single HTTP request. Data exfiltration, RCE, auth bypass at the application perimeter.</severity>
+      <severity level="High" cvss="7.0-8.9">Authenticated exploit, or chained with one other issue. Lateral movement, privilege escalation, significant data exposure.</severity>
+      <severity level="Medium" cvss="4.0-6.9">Requires specific conditions (race window, admin context, non-default config). Limited blast radius.</severity>
+      <severity level="Low" cvss="0.1-3.9">Defense-in-depth gap, best-practice violation, no direct exploitability. Informational hardening items.</severity>
+      <severity level="Informational" cvss="N/A">Observed pattern, not a vulnerability. Worth noting for architecture review.</severity>
+    </severity-definitions>
+
+    <scope-rules>
+      <rule>Report only findings within the target repository</rule>
+      <rule>Do not report findings requiring physical access, social engineering, or host OS compromise</rule>
+      <rule>Focus on Java application layer: servlets, Spring MVC/Boot/WebFlux, JAX-RS, EJB, JPA</rule>
+      <rule>Infrastructure misconfigurations out of scope unless directly exploitable via application code</rule>
+    </scope-rules>
+
+    <analysis-discipline>
+      <rule>Taint track before reporting — confirm attacker-controlled input reaches the sink</rule>
+      <rule>Check existing defenses: @Valid, input validators, parameterized queries, allow-lists, filters</rule>
+      <rule>Distinguish sinks from gadgets — test fixture code is not production risk</rule>
+      <rule>One finding per root cause — list all affected sinks as sub-points</rule>
+    </analysis-discipline>
+
+    <false-positive-suppression>
+      <pattern>PreparedStatement usage that is correctly parameterized</pattern>
+      <pattern>ObjectInputStream inside test harnesses with no network surface</pattern>
+      <pattern>Hardcoded credentials that are clearly test/mock values</pattern>
+      <pattern>Path operations on files whose path is derived entirely from classpath resources</pattern>
+      <pattern>Reflected XSS in endpoints with Content-Type: application/json</pattern>
+    </false-positive-suppression>
+
+    <java-always-on-rules>
+      <rule severity="Medium">csrf().disable() is always flagged</rule>
+      <rule>@Transactional bypassed via direct field injection is suspicious</rule>
+      <rule>@RequestMapping without authentication annotation — flag for auth review</rule>
+      <rule>@SuppressWarnings("unchecked") on deserialization code — extra scrutiny</rule>
+      <rule severity="Low">Lombok @Data on JPA entities with bidirectional relationships if Jackson present</rule>
+    </java-always-on-rules>
+  </global-config>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- PIPELINE PHASES                                      -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <pipeline>
+    <phase number="1" name="Architecture Recon" skill="sast-analysis">
+      <description>Map the target Java application's attack surface before vulnerability analysis.</description>
+      <steps>
+        <step>Framework detection (Spring, JAX-RS, Servlet, Quarkus, Micronaut)</step>
+        <step>HTTP entry point discovery (controllers, servlets, WebSockets, GraphQL, gRPC, messaging)</step>
+        <step>Data flow source identification (@RequestParam, getParameter, etc.)</step>
+        <step>Trust boundary mapping (auth config, filters, CORS, CSRF, session)</step>
+        <step>Endpoint authentication classification (public, authenticated, role-restricted, unknown)</step>
+        <step>Database and external integration inventory</step>
+        <step>High-risk component flagging</step>
+      </steps>
+      <output file=".github/sast-context.md"/>
+    </phase>
+
+    <phase number="2" name="Vulnerability Analysis">
+      <description>Independent vulnerability skills run in parallel, each taint-tracking source to sink.</description>
+      <pre-analysis>
+        <skill name="sast-function-tree" output=".github/sast-function-tree.md"/>
+        <skill name="sast-function-review" output=".github/sast-function-review.md"/>
+        <skill name="sast-taint-tree" output=".github/sast-taint-trees.md"/>
+      </pre-analysis>
+      <vulnerability-skills>
+        <skill name="sast-sqli" category="injection" cwe="CWE-89">SQL / JPQL / HQL / NoSQL injection</skill>
+        <skill name="sast-rce" category="injection" cwe="CWE-78">Remote Code Execution</skill>
+        <skill name="sast-xss" category="injection" cwe="CWE-79">Cross-Site Scripting</skill>
+        <skill name="sast-xxe" category="injection" cwe="CWE-611">XML External Entity</skill>
+        <skill name="sast-ldap" category="injection" cwe="CWE-90">LDAP Injection</skill>
+        <skill name="sast-templateinject" category="injection" cwe="CWE-1336">Server-side template injection</skill>
+        <skill name="sast-ssrf" category="injection" cwe="CWE-918">Server-Side Request Forgery</skill>
+        <skill name="sast-openredirect" category="injection" cwe="CWE-601">User-controlled redirects</skill>
+        <skill name="sast-pathtraversal" category="injection" cwe="CWE-22">Path traversal / file ops</skill>
+        <skill name="sast-file-upload" category="injection" cwe="CWE-434">Unrestricted file upload</skill>
+        <skill name="sast-idor" category="access-control" cwe="CWE-639">Insecure Direct Object Reference</skill>
+        <skill name="sast-auth" category="access-control" cwe="CWE-287">Auth / session / JWT / privilege bypass</skill>
+        <skill name="sast-csrf" category="access-control" cwe="CWE-352">Cross-site request forgery</skill>
+        <skill name="sast-cors" category="access-control" cwe="CWE-942">Cross-Origin Resource Sharing misconfig</skill>
+        <skill name="sast-oauth" category="access-control" cwe="CWE-346">OAuth / OIDC flaws</skill>
+        <skill name="sast-massassignment" category="access-control" cwe="CWE-915">Unsafe request binding to sensitive fields</skill>
+        <skill name="sast-business-logic" category="access-control" cwe="CWE-840">Invariants, state machines, race conditions</skill>
+        <skill name="sast-crypto" category="configuration" cwe="CWE-327">Weak cryptography</skill>
+        <skill name="sast-deserial" category="configuration" cwe="CWE-502">Deserialization (ObjectInputStream, gadgets)</skill>
+        <skill name="sast-secrets" category="configuration" cwe="CWE-798">Hardcoded credentials / tokens</skill>
+        <skill name="sast-headers" category="configuration" cwe="CWE-693">Security headers misconfig</skill>
+        <skill name="sast-logging" category="configuration" cwe="CWE-532">Sensitive data logging exposure</skill>
+        <skill name="sast-cache" category="configuration" cwe="CWE-525">Cache poisoning</skill>
+        <skill name="sast-dependency" category="configuration" cwe="CWE-1395">Known-vulnerable dependencies</skill>
+        <skill name="sast-graphql" category="configuration">GraphQL-specific vulnerabilities</skill>
+        <skill name="sast-websocket" category="configuration">WebSocket security issues</skill>
+      </vulnerability-skills>
+      <research-skills>
+        <skill name="sast-researcher">AI-assisted hypothesis and variant analysis</skill>
+        <skill name="sast-api-abuse">API abuse and business logic research</skill>
+        <skill name="sast-attack-chain">Compound exploit chain analysis</skill>
+      </research-skills>
+      <output file=".github/sast-findings.jsonl"/>
+    </phase>
+
+    <phase number="3" name="Reporting" skill="sast-report">
+      <description>Consolidate all findings, deduplicate, rank by severity, and generate reports.</description>
+      <steps>
+        <step>Read sast-context.md and sast-findings.jsonl</step>
+        <step>Validate required fields against finding.schema.json</step>
+        <step>Deduplicate findings that share the same root cause</step>
+        <step>Rank by severity, confidence, exploitability, and reachable attack surface</step>
+        <step>Write final report</step>
+      </steps>
+      <outputs>
+        <output file=".github/sast-report.md"/>
+        <output file=".github/sast-report.html"/>
+      </outputs>
+    </phase>
+  </pipeline>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- AGENTS                                               -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <agents>
+
+    <agent name="security-orchestrator" file=".github/agents/security-orchestrator.agent.md" mode="agent">
+      <description>Sequential controller that runs the security review team one role at a time until scan, critique, remediation, and report artifacts are complete.</description>
+      <tools>codebase, search, usages, problems, changes, terminal</tools>
+      <handoffs>
+        <handoff label="Start Team Scan" target="security-lead"/>
+        <handoff label="Function Tree" target="security-engineer"/>
+        <handoff label="Engineering Validation" target="security-engineer"/>
+        <handoff label="Research Variants" target="security-researcher"/>
+        <handoff label="Critique Findings" target="security-critic"/>
+        <handoff label="Remediate" target="security-remediator"/>
+        <handoff label="HTML Report" target="security-html-reporter"/>
+      </handoffs>
+      <artifacts>
+        <artifact file=".github/sast-orchestration.md" role="progress-ledger"/>
+      </artifacts>
+    </agent>
+
+    <agent name="security-lead" file=".github/agents/security-lead.agent.md" mode="agent">
+      <description>Human-style security review lead that scopes the audit, coordinates specialist agents, and keeps findings evidence-driven.</description>
+      <tools>codebase, search, usages, problems, changes, terminal</tools>
+      <handoffs>
+        <handoff label="Run Engineering Review" target="security-engineer"/>
+        <handoff label="Run Research" target="security-researcher"/>
+        <handoff label="Critique Findings" target="security-critic"/>
+        <handoff label="Generate HTML Report" target="security-html-reporter"/>
+      </handoffs>
+    </agent>
+
+    <agent name="security-engineer" file=".github/agents/security-engineer.agent.md" mode="agent">
+      <description>Practical application security engineer that verifies Java vulnerabilities with source-to-sink evidence and low false-positive tolerance.</description>
+      <tools>codebase, search, usages, problems, changes, terminal</tools>
+      <handoffs>
+        <handoff label="Research Variants" target="security-researcher"/>
+        <handoff label="Critique Findings" target="security-critic"/>
+        <handoff label="Plan Remediation" target="security-remediator"/>
+      </handoffs>
+    </agent>
+
+    <agent name="security-researcher" file=".github/agents/security-researcher.agent.md">
+      <description>Deep adversarial research — hypothesis generation, variant analysis, exploit chains, and API abuse patterns beyond automated scanning.</description>
+      <tools>search/codebase, search/usages, web/fetch, read/file, read/directory</tools>
+      <research-modes>
+        <mode name="Hypothesis-Driven Variant Analysis">Find sibling vulnerabilities by tracing shared validation helpers.</mode>
+        <mode name="API Abuse and Business Logic Research">Map ID-bearing endpoints, tenant isolation, state machine bypass, token lifecycle.</mode>
+        <mode name="Exploit Chain Construction">Combine medium findings into critical chains from lowest-privilege entry point.</mode>
+      </research-modes>
+      <handoffs>
+        <handoff label="Run Full SAST Scan" target="security-auditor"/>
+        <handoff label="Generate Report" target="security-auditor"/>
+      </handoffs>
+    </agent>
+
+    <agent name="security-critic" file=".github/agents/security-critic.agent.md" mode="agent">
+      <description>Independent critique agent that challenges scan findings for false positives, weak evidence, duplicate root causes, and severity inflation.</description>
+      <tools>codebase, search, usages, problems, changes, terminal</tools>
+      <critique-checklist>
+        <check>Is the source attacker-controlled?</check>
+        <check>Is the sink actually reachable?</check>
+        <check>Is there a sanitizer, validator, authorization check, or filter?</check>
+        <check>Is the severity justified by actor, preconditions, data sensitivity, blast radius?</check>
+        <check>Is this a duplicate or variant of another root cause?</check>
+        <check>Is the remediation specific enough to implement?</check>
+        <check>Is the evidence safe to publish?</check>
+      </critique-checklist>
+      <decisions>
+        <decision>Accept — evidence is sufficient</decision>
+        <decision>Revise — real but needs adjustment</decision>
+        <decision>Merge — duplicate root cause</decision>
+        <decision>Downgrade to Hypothesis — suspicious but not proven</decision>
+        <decision>Reject — not exploitable, unreachable, or explained by existing controls</decision>
+      </decisions>
+      <handoffs>
+        <handoff label="Fix Finding" target="security-remediator"/>
+        <handoff label="Final Report" target="security-html-reporter"/>
+      </handoffs>
+    </agent>
+
+    <agent name="security-remediator" file=".github/agents/security-remediator.agent.md" mode="agent">
+      <description>Remediation planning agent that turns validated security findings into concrete Java fixes, tests, and rollout guidance.</description>
+      <tools>codebase, search, usages, problems, changes, terminal</tools>
+      <remediation-standards>
+        <standard>Prefer framework-native controls</standard>
+        <standard>Use allowlists over blocklists</standard>
+        <standard>Enforce authorization in service or repository layers</standard>
+        <standard>Use structured APIs and parameter binding for injection</standard>
+        <standard>Validate parsed and resolved destinations for SSRF</standard>
+        <standard>Rotate secrets before removal</standard>
+        <standard>Include upgrade target and compatibility risk for dependencies</standard>
+      </remediation-standards>
+      <handoffs>
+        <handoff label="Critique Remediation" target="security-critic"/>
+        <handoff label="HTML Report" target="security-html-reporter"/>
+      </handoffs>
+      <artifacts>
+        <artifact file=".github/sast-remediation.md"/>
+      </artifacts>
+    </agent>
+
+    <agent name="security-html-reporter" file=".github/agents/security-html-reporter.agent.md" mode="agent">
+      <description>Static HTML report generator for security scan results, remediation roadmap, critique decisions, and executive summaries.</description>
+      <tools>codebase, search, usages, problems, changes, terminal</tools>
+      <report-structure>
+        <section order="1">Title, date, scope, scan status</section>
+        <section order="2">Executive summary</section>
+        <section order="3">Severity and confidence summary</section>
+        <section order="4">Findings table</section>
+        <section order="5">Detailed findings</section>
+        <section order="6">Attack chains</section>
+        <section order="7">Remediation roadmap</section>
+        <section order="8">Coverage and limitations</section>
+        <section order="9">Function tree and taint tree appendix</section>
+        <section order="10">Appendix with methodology and artifact sources</section>
+      </report-structure>
+      <html-requirements>
+        <requirement>Single self-contained HTML file with inline CSS</requirement>
+        <requirement>No remote scripts, external fonts, trackers, CDNs, or images</requirement>
+        <requirement>Escape code snippets and user-controlled content</requirement>
+        <requirement>Print-friendly styling</requirement>
+        <requirement>Severity colors: Critical=deep red, High=red-orange, Medium=amber, Low=blue, Info=gray</requirement>
+        <requirement>Stable fragment IDs for each finding</requirement>
+      </html-requirements>
+      <artifacts>
+        <artifact file=".github/sast-report.html"/>
+      </artifacts>
+    </agent>
+
+    <agent name="security-auditor" file=".github/agents/security-auditor.agent.md" mode="agent">
+      <description>Runs the modular Java SAST pipeline and produces evidence-backed vulnerability reports.</description>
+      <tools>codebase, search, usages, problems, changes, terminal</tools>
+      <artifacts>
+        <artifact file=".github/sast-context.md"/>
+        <artifact file=".github/sast-findings.jsonl"/>
+        <artifact file=".github/sast-report.md"/>
+      </artifacts>
+    </agent>
+
+  </agents>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- PROMPTS                                              -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <prompts>
+    <prompt name="orchestrated-scan" command="/orchestrated-scan" file=".github/prompts/orchestrated-scan.prompt.md">
+      <description>Sequential security review — runs all 7 stages in order with completion gates.</description>
+      <stages>
+        <stage order="1" name="Lead / Scope" role="security-lead" gate="Scope explicit, architecture context exists"/>
+        <stage order="2" name="Function Tree / Human Review" skills="sast-function-tree, sast-function-review, sast-taint-tree" gate="Tree exists, high-risk queue exists"/>
+        <stage order="3" name="Engineer / Validate" role="security-engineer" gate="Findings or no-finding note recorded"/>
+        <stage order="4" name="Researcher / Expand" role="security-researcher" gate="Variant and attack-chain review recorded"/>
+        <stage order="5" name="Critic / Quality Gate" role="security-critic" gate="Every finding has a critique decision"/>
+        <stage order="6" name="Remediator / Fix Plan" role="security-remediator" gate="Every accepted finding has remediation"/>
+        <stage order="7" name="Report / HTML" skills="sast-report, security-html-reporter" gate="Both reports exist"/>
+      </stages>
+    </prompt>
+
+    <prompt name="team-scan" command="/team-scan" file=".github/prompts/team-scan.prompt.md">
+      <description>Human-style multi-agent review — looser coordination with specialist handoffs.</description>
+      <flow>security-lead → security-engineer → security-researcher → security-critic → security-remediator → security-html-reporter</flow>
+    </prompt>
+
+    <prompt name="scan" command="/scan" file=".github/prompts/scan.prompt.md">
+      <description>Single-agent full SAST pipeline via security-auditor.</description>
+      <phases>
+        <phase>Phase 1: sast-analysis → sast-context.md</phase>
+        <phase>Phase 2: Function trees + 28 vulnerability skills → sast-findings.jsonl</phase>
+        <phase>Phase 3: sast-report → sast-report.md</phase>
+      </phases>
+    </prompt>
+  </prompts>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- HOOKS                                                -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <hooks>
+    <hook name="pre-commit" file=".github/hooks/pre-commit.md">
+      <triggers>*.java, *.xml, *.properties, *.yml, *.yaml, pom.xml, build.gradle, build.gradle.kts</triggers>
+      <blocking-policy>Block only for Critical or High confidence findings introduced by the staged change.</blocking-policy>
+    </hook>
+    <hook name="pre-push" file=".github/hooks/pre-push.md">
+      <triggers>Java source, security configuration, dependency manifests, framework routing files</triggers>
+      <blocking-policy>Block for confirmed Critical and remotely-reachable High findings.</blocking-policy>
+    </hook>
+  </hooks>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- FINDING SCHEMA                                       -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <finding-schema file=".github/schemas/finding.schema.json">
+    <field name="id" type="string" required="true" pattern="^[A-Z]+-[0-9]{3}$">Unique finding ID (e.g., SQLI-001)</field>
+    <field name="skill" type="enum" required="true">Which Phase 2 skill produced this finding</field>
+    <field name="cwe" type="string" required="true" pattern="^CWE-[0-9]+$">Primary CWE identifier</field>
+    <field name="owasp" type="string" required="false">OWASP Top 10 2021 category</field>
+    <field name="severity" type="enum" required="true" values="Critical|High|Medium|Low|Informational">Severity level</field>
+    <field name="confidence" type="enum" required="true" values="High|Medium|Low">Confidence level</field>
+    <field name="file" type="string" required="true">Path relative to repo root</field>
+    <field name="line" type="integer" required="true" min="1">Line number of the sink expression</field>
+    <field name="column" type="integer" required="false" min="1">Column number of the sink</field>
+    <field name="method" type="string" required="false">Enclosing method name</field>
+    <field name="class" type="string" required="false">Fully qualified class name</field>
+    <field name="evidence" type="string" required="true">Exact code snippet (1-3 lines)</field>
+    <field name="sink" type="string" required="true">Dangerous API being called</field>
+    <field name="source" type="string" required="true">Where tainted data originates</field>
+    <field name="taint_path" type="array" required="false">Intermediate steps [{step, file, line}]</field>
+    <field name="sanitizer_present" type="boolean" required="true">True if any sanitizer found (forces confidence &lt;= Medium)</field>
+    <field name="sanitizer_detail" type="string" required="false">Why the sanitizer may be insufficient</field>
+    <field name="remediation" type="string" required="true">Specific fix instruction</field>
+    <field name="references" type="array" required="false">CWE links, OWASP pages, CVE numbers</field>
+    <field name="false_positive_indicators" type="array" required="false">Patterns that reduce confidence</field>
+    <field name="duplicate_of" type="string|null" required="false">Set by Phase 3 only if duplicate</field>
+  </finding-schema>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- CHATMODES                                            -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <chatmodes>
+    <chatmode name="security-auditor" file=".github/chatmodes/security-auditor.chatmode.md">
+      <description>VS Code chat mode that loads all skills for the Java application security auditor.</description>
+      <tools>codebase, search, usages, problems, changes, terminal</tools>
+    </chatmode>
+  </chatmodes>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- ORCHESTRATION WORKFLOW                               -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <orchestration-workflow>
+    <stage order="1" name="Lead / Scope" agent="security-lead" output="sast-context.md"/>
+    <stage order="2" name="Function Tree / Human Review" skills="sast-function-tree, sast-function-review, sast-taint-tree" outputs="sast-function-tree.md, sast-function-review.md, sast-taint-trees.md"/>
+    <stage order="3" name="Engineer / Validate" agent="security-engineer" output="sast-findings.jsonl"/>
+    <stage order="4" name="Researcher / Expand" agent="security-researcher" output="hypotheses in findings"/>
+    <stage order="5" name="Critic / Quality Gate" agent="security-critic" output="sast-critique.md"/>
+    <stage order="6" name="Remediator / Fix Plan" agent="security-remediator" output="sast-remediation.md"/>
+    <stage order="7" name="Report / HTML" agent="security-html-reporter" skill="sast-report" outputs="sast-report.md, sast-report.html"/>
+  </orchestration-workflow>
+
+</security-harness>

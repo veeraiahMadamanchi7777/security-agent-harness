@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Security Agent Harness — Visualizer</title>
+<style>
+  :root {
+    --bg: #0d1117; --surface: #161b22; --border: #30363d;
+    --text: #c9d1d9; --text-muted: #8b949e; --text-bright: #f0f6fc;
+    --critical: #da3633; --high: #d29922; --medium: #e3b341;
+    --low: #58a6ff; --info: #8b949e;
+    --accent: #58a6ff; --accent2: #3fb950; --accent3: #bc8cff;
+    --card-radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* Header */
+  .header { background: linear-gradient(135deg, #1a1e2e 0%, #0d1117 100%); border-bottom: 1px solid var(--border); padding: 2rem 2rem 1.5rem; text-align: center; }
+  .header h1 { font-size: 2rem; color: var(--text-bright); margin-bottom: .3rem; }
+  .header h1 span { color: var(--accent); }
+  .header p { color: var(--text-muted); font-size: .95rem; max-width: 700px; margin: 0 auto; }
+  .badge-row { display: flex; justify-content: center; gap: .5rem; margin-top: .8rem; flex-wrap: wrap; }
+  .badge { padding: .2rem .7rem; border-radius: 20px; font-size: .75rem; font-weight: 600; border: 1px solid var(--border); }
+  .badge-agents { background: rgba(188,140,255,.15); color: var(--accent3); border-color: var(--accent3); }
+  .badge-skills { background: rgba(63,185,80,.15); color: var(--accent2); border-color: var(--accent2); }
+  .badge-prompts { background: rgba(88,166,255,.15); color: var(--accent); border-color: var(--accent); }
+
+  /* Nav */
+  .nav { display: flex; justify-content: center; gap: .5rem; padding: 1rem; background: var(--surface); border-bottom: 1px solid var(--border); flex-wrap: wrap; position: sticky; top: 0; z-index: 100; }
+  .nav a { padding: .4rem 1rem; border-radius: 6px; font-size: .85rem; color: var(--text-muted); transition: .2s; }
+  .nav a:hover, .nav a.active { background: var(--accent); color: #fff; text-decoration: none; }
+
+  /* Sections */
+  .section { max-width: 1200px; margin: 2rem auto; padding: 0 1.5rem; }
+  .section h2 { font-size: 1.4rem; color: var(--text-bright); margin-bottom: 1rem; padding-bottom: .5rem; border-bottom: 2px solid var(--accent); display: inline-block; }
+  .section h3 { font-size: 1.1rem; color: var(--accent); margin: 1.5rem 0 .5rem; }
+
+  /* Pipeline */
+  .pipeline { display: flex; gap: 1rem; align-items: flex-start; margin: 1.5rem 0; flex-wrap: wrap; }
+  .phase-card { flex: 1; min-width: 280px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--card-radius); padding: 1.2rem; position: relative; }
+  .phase-card.phase1 { border-top: 3px solid var(--accent); }
+  .phase-card.phase2 { border-top: 3px solid var(--accent2); }
+  .phase-card.phase3 { border-top: 3px solid var(--accent3); }
+  .phase-label { font-size: .7rem; text-transform: uppercase; letter-spacing: .1em; font-weight: 700; margin-bottom: .3rem; }
+  .phase1 .phase-label { color: var(--accent); }
+  .phase2 .phase-label { color: var(--accent2); }
+  .phase3 .phase-label { color: var(--accent3); }
+  .phase-card h4 { color: var(--text-bright); margin-bottom: .5rem; }
+  .phase-card p { font-size: .85rem; color: var(--text-muted); }
+  .phase-card ul { font-size: .83rem; color: var(--text-muted); padding-left: 1.2rem; margin-top: .5rem; }
+  .phase-arrow { display: flex; align-items: center; font-size: 1.5rem; color: var(--text-muted); padding-top: 2rem; }
+  @media (max-width: 900px) { .phase-arrow { display: none; } }
+
+  /* Agent cards */
+  .agent-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; margin-top: 1rem; }
+  .agent-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--card-radius); padding: 1.2rem; transition: .2s; cursor: pointer; }
+  .agent-card:hover { border-color: var(--accent); box-shadow: 0 0 12px rgba(88,166,255,.15); }
+  .agent-card .agent-name { font-weight: 700; color: var(--text-bright); font-size: 1rem; }
+  .agent-card .agent-desc { font-size: .83rem; color: var(--text-muted); margin: .4rem 0; }
+  .agent-card .agent-tools { display: flex; gap: .3rem; flex-wrap: wrap; margin-top: .5rem; }
+  .agent-card .tool-tag { background: rgba(88,166,255,.1); color: var(--accent); padding: .15rem .5rem; border-radius: 4px; font-size: .7rem; border: 1px solid rgba(88,166,255,.2); }
+  .agent-card .handoff-list { margin-top: .7rem; font-size: .8rem; }
+  .agent-card .handoff-list summary { color: var(--accent3); cursor: pointer; font-weight: 600; }
+  .agent-card .handoff-list ul { padding-left: 1.2rem; margin-top: .3rem; color: var(--text-muted); }
+  .agent-detail { display: none; margin-top: .8rem; font-size: .82rem; color: var(--text-muted); border-top: 1px solid var(--border); padding-top: .6rem; }
+  .agent-card.open .agent-detail { display: block; }
+
+  /* Skills */
+  .skill-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: .6rem; margin-top: 1rem; }
+  .skill-chip { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: .7rem .9rem; cursor: pointer; transition: .2s; }
+  .skill-chip:hover { border-color: var(--accent2); }
+  .skill-chip .skill-name { font-weight: 600; font-size: .88rem; color: var(--text-bright); }
+  .skill-chip .skill-cat { font-size: .72rem; color: var(--text-muted); margin-top: .2rem; }
+  .skill-chip .skill-phase { font-size: .65rem; padding: .1rem .4rem; border-radius: 3px; display: inline-block; margin-top: .3rem; }
+  .skill-chip .p1 { background: rgba(88,166,255,.15); color: var(--accent); }
+  .skill-chip .p2 { background: rgba(63,185,80,.15); color: var(--accent2); }
+  .skill-chip .p3 { background: rgba(188,140,255,.15); color: var(--accent3); }
+  .skill-chip .meta { background: rgba(139,148,158,.15); color: var(--text-muted); }
+
+  /* Severity legend */
+  .severity-bar { display: flex; gap: .5rem; flex-wrap: wrap; margin: 1rem 0; }
+  .sev-pill { padding: .3rem .8rem; border-radius: 6px; font-size: .78rem; font-weight: 600; }
+  .sev-critical { background: rgba(218,54,51,.2); color: var(--critical); border: 1px solid var(--critical); }
+  .sev-high { background: rgba(210,153,34,.2); color: var(--high); border: 1px solid var(--high); }
+  .sev-medium { background: rgba(227,179,65,.15); color: var(--medium); border: 1px solid var(--medium); }
+  .sev-low { background: rgba(88,166,255,.15); color: var(--low); border: 1px solid var(--low); }
+  .sev-info { background: rgba(139,148,158,.15); color: var(--info); border: 1px solid var(--info); }
+
+  /* Prompt cards */
+  .prompt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; margin-top: 1rem; }
+  .prompt-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--card-radius); padding: 1.2rem; }
+  .prompt-card h4 { color: var(--accent); font-size: 1rem; }
+  .prompt-card p { font-size: .83rem; color: var(--text-muted); margin-top: .3rem; }
+  .prompt-card .cmd { font-family: monospace; background: rgba(88,166,255,.1); color: var(--accent); padding: .2rem .5rem; border-radius: 4px; font-size: .82rem; display: inline-block; margin-top: .5rem; }
+  .prompt-card ol { font-size: .82rem; color: var(--text-muted); padding-left: 1.3rem; margin-top: .5rem; }
+
+  /* Schema */
+  .schema-table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: .82rem; }
+  .schema-table th { background: var(--surface); color: var(--text-bright); text-align: left; padding: .6rem .8rem; border: 1px solid var(--border); }
+  .schema-table td { padding: .5rem .8rem; border: 1px solid var(--border); color: var(--text-muted); vertical-align: top; }
+  .schema-table tr:hover td { background: rgba(88,166,255,.05); }
+  .req { color: var(--critical); font-weight: 600; font-size: .7rem; }
+  .opt { color: var(--text-muted); font-size: .7rem; }
+  code { background: rgba(110,118,129,.2); padding: .1rem .35rem; border-radius: 4px; font-size: .82em; color: var(--text-bright); }
+
+  /* Hooks */
+  .hook-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--card-radius); padding: 1.2rem; margin-top: 1rem; }
+  .hook-card h4 { color: var(--accent); }
+  .hook-card ul, .hook-card ol { font-size: .83rem; color: var(--text-muted); padding-left: 1.3rem; margin-top: .5rem; }
+
+  /* Workflow diagram */
+  .flow-diagram { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .3rem; margin: 1.5rem 0; padding: 1rem; background: var(--surface); border-radius: var(--card-radius); border: 1px solid var(--border); }
+  .flow-node { padding: .4rem .8rem; border-radius: 6px; font-size: .78rem; font-weight: 600; white-space: nowrap; }
+  .flow-arrow { color: var(--text-muted); font-size: 1.1rem; }
+  .fn-lead { background: rgba(88,166,255,.15); color: var(--accent); border: 1px solid rgba(88,166,255,.3); }
+  .fn-eng { background: rgba(63,185,80,.15); color: var(--accent2); border: 1px solid rgba(63,185,80,.3); }
+  .fn-res { background: rgba(227,179,65,.15); color: var(--medium); border: 1px solid rgba(227,179,65,.3); }
+  .fn-crit { background: rgba(218,54,51,.15); color: var(--critical); border: 1px solid rgba(218,54,51,.3); }
+  .fn-rem { background: rgba(188,140,255,.15); color: var(--accent3); border: 1px solid rgba(188,140,255,.3); }
+  .fn-rep { background: rgba(139,148,158,.15); color: var(--text-bright); border: 1px solid rgba(139,148,158,.3); }
+
+  /* File tree */
+  .file-tree { background: var(--surface); border: 1px solid var(--border); border-radius: var(--card-radius); padding: 1rem 1.5rem; margin-top: 1rem; font-family: monospace; font-size: .82rem; line-height: 1.8; color: var(--text-muted); overflow-x: auto; }
+  .file-tree .dir { color: var(--accent); font-weight: 600; }
+  .file-tree .file { color: var(--text); }
+  .file-tree .comment { color: var(--text-muted); font-style: italic; }
+
+  /* Footer */
+  .footer { text-align: center; padding: 2rem; color: var(--text-muted); font-size: .8rem; border-top: 1px solid var(--border); margin-top: 3rem; }
+
+  /* Filter */
+  .filter-bar { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+  .filter-btn { padding: .3rem .7rem; border-radius: 5px; font-size: .78rem; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); cursor: pointer; transition: .2s; }
+  .filter-btn:hover, .filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* Collapsible sections */
+  .collapsible { cursor: pointer; }
+  .collapsible::before { content: '▶ '; font-size: .7em; }
+  .collapsible.open::before { content: '▼ '; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <h1>🛡️ <span>Security Agent Harness</span> — Visualizer</h1>
+  <p>Modular Java SAST system — AI-guided agents, skills, prompts, and scan pipelines for comprehensive security analysis.</p>
+  <div class="badge-row">
+    <span class="badge badge-agents">8 Agents</span>
+    <span class="badge badge-skills">34 Skills</span>
+    <span class="badge badge-prompts">3 Prompts</span>
+  </div>
+</div>
+
+<!-- NAV -->
+<div class="nav">
+  <a href="#pipeline">Pipeline</a>
+  <a href="#workflow">Workflow</a>
+  <a href="#agents">Agents</a>
+  <a href="#skills">Skills</a>
+  <a href="#prompts">Prompts</a>
+  <a href="#severity">Severity</a>
+  <a href="#schema">Schema</a>
+  <a href="#hooks">Hooks</a>
+  <a href="#layout">File Layout</a>
+</div>
+
+<!-- PIPELINE -->
+<div class="section" id="pipeline">
+  <h2>Three-Phase Pipeline</h2>
+  <div class="pipeline">
+    <div class="phase-card phase1">
+      <div class="phase-label">Phase 1</div>
+      <h4>Architecture Recon</h4>
+      <p>Map the target Java application's attack surface before vulnerability analysis.</p>
+      <ul>
+        <li>Framework detection (Spring, JAX-RS, Servlet, etc.)</li>
+        <li>HTTP entry point discovery</li>
+        <li>Data flow source identification</li>
+        <li>Trust boundary mapping</li>
+        <li>Endpoint auth classification</li>
+        <li>Database &amp; external integration inventory</li>
+        <li>High-risk component flagging</li>
+      </ul>
+      <p style="margin-top:.5rem;"><strong>Skill:</strong> <code>sast-analysis</code></p>
+      <p><strong>Output:</strong> <code>.github/sast-context.md</code></p>
+    </div>
+    <div class="phase-arrow">→</div>
+    <div class="phase-card phase2">
+      <div class="phase-label">Phase 2</div>
+      <h4>Vulnerability Analysis</h4>
+      <p>Independent vulnerability skills run in parallel, each taint-tracking source to sink.</p>
+      <ul>
+        <li>31 vulnerability-class skills</li>
+        <li>Function tree + function review + taint trees</li>
+        <li>Attack chain construction</li>
+        <li>API abuse &amp; business logic research</li>
+        <li>Each skill references Phase 1 context</li>
+      </ul>
+      <p style="margin-top:.5rem;"><strong>Output:</strong> <code>.github/sast-findings.jsonl</code></p>
+    </div>
+    <div class="phase-arrow">→</div>
+    <div class="phase-card phase3">
+      <div class="phase-label">Phase 3</div>
+      <h4>Reporting</h4>
+      <p>Consolidate all findings, deduplicate, rank by severity, and generate reports.</p>
+      <ul>
+        <li>Schema validation</li>
+        <li>Root-cause deduplication</li>
+        <li>Severity &amp; exploitability ranking</li>
+        <li>200-component structured report</li>
+        <li>Static HTML report generation</li>
+      </ul>
+      <p style="margin-top:.5rem;"><strong>Skill:</strong> <code>sast-report</code></p>
+      <p><strong>Outputs:</strong> <code>.github/sast-report.md</code>, <code>.github/sast-report.html</code></p>
+    </div>
+  </div>
+</div>
+
+<!-- WORKFLOW -->
+<div class="section" id="workflow">
+  <h2>Orchestrated Workflow</h2>
+  <p style="color:var(--text-muted);margin-bottom:1rem;">The <code>security-orchestrator</code> runs these stages sequentially, recording progress in <code>.github/sast-orchestration.md</code>.</p>
+  <div class="flow-diagram">
+    <span class="flow-node fn-lead">1. Lead / Scope</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-node fn-eng">2. Function Tree</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-node fn-eng">3. Engineer / Validate</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-node fn-res">4. Researcher / Expand</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-node fn-crit">5. Critic / Quality Gate</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-node fn-rem">6. Remediator / Fix</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-node fn-rep">7. Reporter / HTML</span>
+  </div>
+
+  <h3>Stage Details</h3>
+  <table class="schema-table">
+    <thead><tr><th>Stage</th><th>Role / Agent</th><th>Required Artifact(s)</th><th>Gate</th></tr></thead>
+    <tbody>
+      <tr><td>1. Lead / Scope</td><td><code>security-lead</code></td><td><code>sast-context.md</code></td><td>Scope explicit, architecture context exists</td></tr>
+      <tr><td>2. Function Tree</td><td><code>sast-function-tree</code>, <code>sast-function-review</code>, <code>sast-taint-tree</code></td><td><code>sast-function-tree.md</code>, <code>sast-function-review.md</code>, <code>sast-taint-trees.md</code></td><td>Tree exists, high-risk queue exists, taint trees documented</td></tr>
+      <tr><td>3. Engineer / Validate</td><td><code>security-engineer</code></td><td><code>sast-findings.jsonl</code></td><td>Findings or no-finding note recorded</td></tr>
+      <tr><td>4. Researcher / Expand</td><td><code>security-researcher</code></td><td>Hypotheses / findings update</td><td>Variant and attack-chain review recorded</td></tr>
+      <tr><td>5. Critic / Quality Gate</td><td><code>security-critic</code></td><td><code>sast-critique.md</code></td><td>Every finding has a critique decision</td></tr>
+      <tr><td>6. Remediator / Fix</td><td><code>security-remediator</code></td><td><code>sast-remediation.md</code></td><td>Every accepted finding has remediation</td></tr>
+      <tr><td>7. Reporter / HTML</td><td><code>sast-report</code> + <code>security-html-reporter</code></td><td><code>sast-report.md</code>, <code>sast-report.html</code></td><td>Both reports exist, no rejected findings as confirmed</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- AGENTS -->
+<div class="section" id="agents">
+  <h2>Agent Team</h2>
+
+  <div class="agent-grid">
+
+    <!-- Orchestrator -->
+    <div class="agent-card" onclick="this.classList.toggle('open')">
+      <div class="agent-name">security-orchestrator</div>
+      <div class="agent-desc">Sequential controller — runs the team one role at a time until scan, critique, remediation, and reports are complete.</div>
+      <div class="agent-tools">
+        <span class="tool-tag">codebase</span><span class="tool-tag">search</span><span class="tool-tag">usages</span><span class="tool-tag">problems</span><span class="tool-tag">changes</span><span class="tool-tag">terminal</span>
+      </div>
+      <details class="handoff-list"><summary>7 Handoffs</summary>
+        <ul>
+          <li><strong>Start Team Scan</strong> → security-lead</li>
+          <li><strong>Function Tree</strong> → security-engineer</li>
+          <li><strong>Engineering Validation</strong> → security-engineer</li>
+          <li><strong>Research Variants</strong> → security-researcher</li>
+          <li><strong>Critique Findings</strong> → security-critic</li>
+          <li><strong>Remediate</strong> → security-remediator</li>
+          <li><strong>HTML Report</strong> → security-html-reporter</li>
+        </ul>
+      </details>
+      <div class="agent-detail">
+        <p>Maintains <code>.github/sast-orchestration.md</code> as progress ledger. Runs 7 ordered stages: Lead → Function Tree → Engineer → Researcher → Critic → Remediator → Reporter. Updates status (pending/running/complete/blocked) after each stage. Stops and reports blockers only when scope cannot be found, files cannot be read/written, or user requests stop.</p>
+      </div>
+    </div>
+
+    <!-- Lead -->
+    <div class="agent-card" onclick="this.classList.toggle('open')">
+      <div class="agent-name">security-lead</div>
+      <div class="agent-desc">Human-style review lead — scopes the audit, coordinates specialists, keeps findings evidence-driven.</div>
+      <div class="agent-tools">
+        <span class="tool-tag">codebase</span><span class="tool-tag">search</span><span class="tool-tag">usages</span><span class="tool-tag">problems</span><span class="tool-tag">changes</span><span class="tool-tag">terminal</span>
+      </div>
+      <details class="handoff-list"><summary>4 Handoffs</summary>
+        <ul>
+          <li><strong>Run Engineering Review</strong> → security-engineer</li>
+          <li><strong>Run Research</strong> → security-researcher</li>
+          <li><strong>Critique Findings</strong> → security-critic</li>
+          <li><strong>Generate HTML Report</strong> → security-html-reporter</li>
+        </ul>
+      </details>
+      <div class="agent-detail">
+        <p>Acts as assessment lead: establishes scope, defines assumptions, runs architecture recon via <code>sast-analysis</code>, builds function-level maps, and hands focused work to specialists. Keeps confirmed findings separate from hypotheses. Produces a short assessment brief with scope, agents used, artifact status, finding counts, and open questions.</p>
+      </div>
+    </div>
+
+    <!-- Engineer -->
+    <div class="agent-card" onclick="this.classList.toggle('open')">
+      <div class="agent-name">security-engineer</div>
+      <div class="agent-desc">Hands-on AppSec engineer — validates real Java vulnerabilities with source-to-sink evidence.</div>
+      <div class="agent-tools">
+        <span class="tool-tag">codebase</span><span class="tool-tag">search</span><span class="tool-tag">usages</span><span class="tool-tag">problems</span><span class="tool-tag">changes</span><span class="tool-tag">terminal</span>
+      </div>
+      <details class="handoff-list"><summary>3 Handoffs</summary>
+        <ul>
+          <li><strong>Research Variants</strong> → security-researcher</li>
+          <li><strong>Critique Findings</strong> → security-critic</li>
+          <li><strong>Plan Remediation</strong> → security-remediator</li>
+        </ul>
+      </details>
+      <div class="agent-detail">
+        <p>Reads context, function trees, and taint trees. Selects relevant vulnerability skills. Traces source→sink manually: entry point → transformations → sink → missing control. Checks tests, filters, interceptors, validators. Strict with evidence — does not report generated, vendored, test-only, or unreachable code. Appends to <code>sast-findings.jsonl</code>.</p>
+      </div>
+    </div>
+
+    <!-- Researcher -->
+    <div class="agent-card" onclick="this.classList.toggle('open')">
+      <div class="agent-name">security-researcher</div>
+      <div class="agent-desc">Offensive security researcher — hypothesis generation, variant analysis, exploit chains, API abuse patterns.</div>
+      <div class="agent-tools">
+        <span class="tool-tag">search/codebase</span><span class="tool-tag">search/usages</span><span class="tool-tag">web/fetch</span><span class="tool-tag">read/file</span><span class="tool-tag">read/directory</span>
+      </div>
+      <details class="handoff-list"><summary>2 Handoffs</summary>
+        <ul>
+          <li><strong>Run Full SAST Scan</strong> → security-auditor</li>
+          <li><strong>Generate Report</strong> → security-auditor</li>
+        </ul>
+      </details>
+      <div class="agent-detail">
+        <p>Three core modes: (1) Hypothesis-driven variant analysis — finds sibling vulnerabilities by tracing shared helpers. (2) API abuse &amp; business logic — maps ID-bearing endpoints, tenant context, state machines, token lifecycle. (3) Exploit chain construction — combines medium findings into critical chains. Also searches for trust boundary mismatches, parser differentials, race conditions, and deserialization gadgets.</p>
+      </div>
+    </div>
+
+    <!-- Critic -->
+    <div class="agent-card" onclick="this.classList.toggle('open')">
+      <div class="agent-name">security-critic</div>
+      <div class="agent-desc">Independent reviewer — challenges findings for false positives, weak evidence, duplicates, and severity inflation.</div>
+      <div class="agent-tools">
+        <span class="tool-tag">codebase</span><span class="tool-tag">search</span><span class="tool-tag">usages</span><span class="tool-tag">problems</span><span class="tool-tag">changes</span><span class="tool-tag">terminal</span>
+      </div>
+      <details class="handoff-list"><summary>2 Handoffs</summary>
+        <ul>
+          <li><strong>Fix Finding</strong> → security-remediator</li>
+          <li><strong>Final Report</strong> → security-html-reporter</li>
+        </ul>
+      </details>
+      <div class="agent-detail">
+        <p>7-point critique checklist: (1) source attacker-controlled? (2) sink reachable? (3) sanitizer/validator present? (4) severity justified? (5) duplicate? (6) remediation specific? (7) evidence safe to publish? Decisions: Accept, Revise, Merge, Downgrade to Hypothesis, or Reject. Produces critique table with finding ID, decision, reason, required edit, and residual risk.</p>
+      </div>
+    </div>
+
+    <!-- Remediator -->
+    <div class="agent-card" onclick="this.classList.toggle('open')">
+      <div class="agent-name">security-remediator</div>
+      <div class="agent-desc">Turns validated findings into concrete Java fixes, regression tests, and rollout guidance.</div>
+      <div class="agent-tools">
+        <span class="tool-tag">codebase</span><span class="tool-tag">search</span><span class="tool-tag">usages</span><span class="tool-tag">problems</span><span class="tool-tag">changes</span><span class="tool-tag">terminal</span>
+      </div>
+      <details class="handoff-list"><summary>2 Handoffs</summary>
+        <ul>
+          <li><strong>Critique Remediation</strong> → security-critic</li>
+          <li><strong>HTML Report</strong> → security-html-reporter</li>
+        </ul>
+      </details>
+      <div class="agent-detail">
+        <p>Maps fixes to code ownership areas (controller, service, repository, config, deps, infra, tests). Standards: prefer framework-native controls, allowlists over blocklists, enforce auth in service/repo layers, structured APIs for injection, validate SSRF destinations, rotate secrets before removal. Writes <code>.github/sast-remediation.md</code>.</p>
+      </div>
+    </div>
+
+    <!-- HTML Reporter -->
+    <div class="agent-card" onclick="this.classList.toggle('open')">
+      <div class="agent-name">security-html-reporter</div>
+      <div class="agent-desc">Generates a polished, self-contained, static HTML report for stakeholders.</div>
+      <div class="agent-tools">
+        <span class="tool-tag">codebase</span><span class="tool-tag">search</span><span class="tool-tag">usages</span><span class="tool-tag">problems</span><span class="tool-tag">changes</span><span class="tool-tag">terminal</span>
+      </div>
+      <div class="agent-detail">
+        <p>No handoffs. Reads all scan artifacts (context, function tree, taint trees, findings JSONL, report, remediation, critique). Produces a single self-contained HTML file with inline CSS, no external resources. Severity colors: Critical=deep red, High=red-orange, Medium=amber, Low=blue, Info=gray. Report sections: title/scope, executive summary, severity summary, findings table, detailed findings, attack chains, remediation roadmap, coverage, appendix.</p>
+      </div>
+    </div>
+
+    <!-- Auditor -->
+    <div class="agent-card" onclick="this.classList.toggle('open')">
+      <div class="agent-name">security-auditor</div>
+      <div class="agent-desc">All-in-one SAST pipeline — runs the full scan and produces evidence-backed reports.</div>
+      <div class="agent-tools">
+        <span class="tool-tag">codebase</span><span class="tool-tag">search</span><span class="tool-tag">usages</span><span class="tool-tag">problems</span><span class="tool-tag">changes</span><span class="tool-tag">terminal</span>
+      </div>
+      <div class="agent-detail">
+        <p>No handoffs. Runs the full pipeline: Phase 1 (<code>sast-analysis</code>) → Phase 2 (all 28+ vulnerability skills) → Phase 3 (<code>sast-report</code>). Reports only when file path, line number, source, sink, missing control, exploit path, and remediation are confirmed. Prefers <code>rg</code> for search with build output exclusions.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- SKILLS -->
+<div class="section" id="skills">
+  <h2>Skills Catalog</h2>
+  <div class="filter-bar">
+    <button class="filter-btn active" onclick="filterSkills('all', this)">All</button>
+    <button class="filter-btn" onclick="filterSkills('phase1', this)">Phase 1</button>
+    <button class="filter-btn" onclick="filterSkills('phase2', this)">Phase 2</button>
+    <button class="filter-btn" onclick="filterSkills('phase3', this)">Phase 3</button>
+    <button class="filter-btn" onclick="filterSkills('meta', this)">Meta</button>
+    <button class="filter-btn" onclick="filterSkills('injection', this)">Injection</button>
+    <button class="filter-btn" onclick="filterSkills('access', this)">Access Control</button>
+    <button class="filter-btn" onclick="filterSkills('config', this)">Config / Infra</button>
+  </div>
+  <div class="skill-grid" id="skillGrid">
+
+    <div class="skill-chip" data-phase="phase1" data-category="meta">
+      <div class="skill-name">sast-analysis</div>
+      <div class="skill-cat">Architecture recon, entry points, data flows</div>
+      <span class="skill-phase p1">Phase 1</span>
+    </div>
+    <div class="skill-chip" data-phase="meta" data-category="meta">
+      <div class="skill-name">sast-function-tree</div>
+      <div class="skill-cat">Call tree for each reachable entry point</div>
+      <span class="skill-phase meta">Meta</span>
+    </div>
+    <div class="skill-chip" data-phase="meta" data-category="meta">
+      <div class="skill-name">sast-function-review</div>
+      <div class="skill-cat">Human-depth review of high-risk functions</div>
+      <span class="skill-phase meta">Meta</span>
+    </div>
+    <div class="skill-chip" data-phase="meta" data-category="meta">
+      <div class="skill-name">sast-taint-tree</div>
+      <div class="skill-cat">Source-to-sink taint trees for risky paths</div>
+      <span class="skill-phase meta">Meta</span>
+    </div>
+
+    <div class="skill-chip" data-phase="phase2" data-category="injection">
+      <div class="skill-name">sast-sqli</div>
+      <div class="skill-cat">SQL / JPQL / HQL / NoSQL injection</div>
+      <span class="skill-phase p2">Phase 2</span>
+    </div>
+    <div class="skill-chip" data-phase="phase2" data-category="injection">
+      <div class="skill-name">sast-rce</div>
+      <div class="skill-cat">Remote Code Execution</div>
+      <span class="skill-phase p2">Phase 2</span>
+    </div>
+    <div class="skill-chip" data-phase="phase2" data-category="injection">
+      <div class="skill-name">sast-xss</div>
+      <div class="skill-cat">Cross-Site Scripting</div>
+      <span class="skill-phase p2">Phase 2</span>
+    </div>
+    <div class="skill-chip" data-phase="phase2" data-category="injection">
+      <div class="skill-name">sast-xxe</div>
+      <div class="skill-cat">XML External Entity</div>
+      <span class="skill-phase p2">Phase 2</span>
+    </div>
+    <div class="skill-chip" data-phase="phase2" data-category="injection">
+      <div class="skill-name">sast-ldap</div>
+      <div class="skill-cat">LDAP Injection</div>
+      <span class="skill-phase p2">Phase 2</span>
+    </div>
+    <div class="skill-chip" data-phase="phase2" data-category="injection">
+      <div class="skill-name">sast-templateinject</div>
+      <div class="skill-cat">Server-side template injection</div>
+      <span class="skill-phase p2">Phase 2</span>
+    </div>
+
+    <div class="skill-chip" data-phase="phase2" data-category="access">
+      <div class="skill-name">sast-idor</div>
+      <div class="skill-cat">Insecure Direct Object Reference</div>
+      <span class="skill-phase p2">Phase 2</span>
+    </div>
+    <div class="skill-chip" data-phase="phase2" data-category="access">
+      <div class="skill-name">sast-auth</div>
+      <div class="skill-cat">Auth / session / JWT / privilege bypass</div>
+      <span class="skill-phase p2">Phase 2</span>
+    </div>
+    <div class="skill-chip" data-phase="phase2" data-category="access">
+      <div class="skill-name">sast-csrf</div>
+      <div class="skill-cat">Cross-site request forgery</div>
+      <span class="skill-phase p2">Phase 2</span>
+    </div>
+    <div class="skill-chip" data-phase="phase2" data-category="access">
+      <div class="skill-name">sast-cors</div>
+      <div class="skill-cat">Cross-Origin Resource Sharing misconfig</div>
+      <span class="skill-phase p2">Phase 2</span>
+    </div>
+    <div class="skill-chip" data-phase="phase2" data-category="access">
+      <div class="skill-name">sast-oauth</div>
+      <div class="skill-cat">OAuth / OIDC flaws</div>
+      <span class="skill-phase p2">Phase 2</span>
+    </div>
+    <div class="skill-chip" data-phase="phase2" data-category="access">
+      <div class="skill-name">sast-massassignment</div>
+      <div class="skill-cat">Unsafe request binding to sensitive fields</div>
+      <span class="skill-phase p2">Phase 2</span>
+    </div>
+
+    <div class="skill-chip" data-phase="phase2" data-category="injection">
+      <div class="skill-name">sast-ssrf</div>
+      <div class="skill-cat">Server-Side Request Forgery</div>
+      <span class="skill-phase p2">Phase 2</span>
+    </div>
+    <div class="skill-chip" data-phase="phase2" data-category="injection">
+      <div class="skill-name">sast-openredirect</div>
+      <div class="skill-cat">User-controlled redirects</div>
+      <span class="skill-phase p2">Phase 2</span>
+    </div>
+    <div class="skill-chip" data-phase="phase2" data-category="injection">
+      <div class="skill-name">sast-pathtraversal</div>
+      <div class="skill-cat">Path traversal / file ops</div>
+      <span class="skill-phase p2">Phase 2</span>
+    </div>
+    <div class="skill-chip" data-phase="phase2" data-category="injection">
+      <div class="skill-name">sast-file-upload</div>
+      <div class="skill-cat">Unrestricted file upload</div>
+      <span class="skill-phase p2">Phase 2</span>
+    </div>
+
+    <div class="skill-chip" data-phase="phase2" data-category="config">
+      <div class="skill-name">sast-crypto</div>
+      <div class="skill-cat">Weak cryptography</div>
+      <span class="skill-phase p2">Phase 2</span>
+    </div>
+    <div class="skill-chip" data-phase="phase2" data-category="config">
+      <div class="skill-name">sast-deserial</div>
+      <div class="skill-cat">Deserialization (ObjectInputStream, gadgets)</div>
+      <span class="skill-phase p2">Phase 2</span>
+    </div>
+    <div class="skill-chip" data-phase="phase2" data-category="config">
+      <div class="skill-name">sast-secrets</div>
+      <div class="skill-cat">Hardcoded credentials / tokens</div>
+      <span class="skill-phase p2">Phase 2</span>
+    </div>
+    <div class="skill-chip" data-phase="phase2" data-category="config">
+      <div class="skill-name">sast-headers</div>
+      <div class="skill-cat">Security headers misconfig</div>
+      <span class="skill-phase p2">Phase 2</span>
+    </div>
+    <div class="skill-chip" data-phase="phase2" data-category="config">
+      <div class="skill-name">sast-logging</div>
+      <div class="skill-cat">Sensitive data logging exposure</div>
+      <span class="skill-phase p2">Phase 2</span>
+    </div>
+    <div class="skill-chip" data-phase="phase2" data-category="config">
+      <div class="skill-name">sast-cache</div>
+      <div class="skill-cat">Cache poisoning</div>
+      <span class="skill-phase p2">Phase 2</span>
+    </div>
+    <div class="skill-chip" data-phase="phase2" data-category="config">
+      <div class="skill-name">sast-dependency</div>
+      <div class="skill-cat">Known-vulnerable dependencies</div>
+      <span class="skill-phase p2">Phase 2</span>
+    </div>
+
+    <div class="skill-chip" data-phase="phase2" data-category="access">
+      <div class="skill-name">sast-business-logic</div>
+      <div class="skill-cat">Invariants, state machines, race conditions</div>
+      <span class="skill-phase p2">Phase 2</span>
+    </div>
+    <div class="skill-chip" data-phase="phase2" data-category="config">
+      <div class="skill-name">sast-graphql</div>
+      <div class="skill-cat">GraphQL-specific vulnerabilities</div>
+      <span class="skill-phase p2">Phase 2</span>
+    </div>
+    <div class="skill-chip" data-phase="phase2" data-category="config">
+      <div class="skill-name">sast-websocket</div>
+      <div class="skill-cat">WebSocket security issues</div>
+      <span class="skill-phase p2">Phase 2</span>
+    </div>
+
+    <div class="skill-chip" data-phase="phase2" data-category="meta">
+      <div class="skill-name">sast-researcher</div>
+      <div class="skill-cat">AI-assisted hypothesis &amp; variant analysis</div>
+      <span class="skill-phase p2">Phase 2</span>
+    </div>
+    <div class="skill-chip" data-phase="phase2" data-category="meta">
+      <div class="skill-name">sast-api-abuse</div>
+      <div class="skill-cat">API abuse &amp; business logic research</div>
+      <span class="skill-phase p2">Phase 2</span>
+    </div>
+    <div class="skill-chip" data-phase="phase2" data-category="meta">
+      <div class="skill-name">sast-attack-chain</div>
+      <div class="skill-cat">Compound exploit chain analysis</div>
+      <span class="skill-phase p2">Phase 2</span>
+    </div>
+
+    <div class="skill-chip" data-phase="phase3" data-category="meta">
+      <div class="skill-name">sast-report</div>
+      <div class="skill-cat">Consolidation, dedup, severity ranking, final report</div>
+      <span class="skill-phase p3">Phase 3</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- PROMPTS -->
+<div class="section" id="prompts">
+  <h2>Prompt Commands</h2>
+  <div class="prompt-grid">
+    <div class="prompt-card">
+      <h4>/orchestrated-scan</h4>
+      <p>Sequential security review — runs all 7 stages in order with completion gates.</p>
+      <span class="cmd">orchestrated-scan.prompt.md</span>
+      <ol>
+        <li>Lead / Scope (sast-analysis)</li>
+        <li>Function Tree / Human Review</li>
+        <li>Engineer / Validate</li>
+        <li>Researcher / Expand</li>
+        <li>Critic / Quality Gate</li>
+        <li>Remediator / Fix Plan</li>
+        <li>Reporter / HTML</li>
+      </ol>
+    </div>
+    <div class="prompt-card">
+      <h4>/team-scan</h4>
+      <p>Human-style multi-agent review — looser coordination with specialist handoffs.</p>
+      <span class="cmd">team-scan.prompt.md</span>
+      <ol>
+        <li>security-lead scopes</li>
+        <li>security-engineer validates</li>
+        <li>security-researcher researches</li>
+        <li>security-critic challenges</li>
+        <li>security-remediator fixes</li>
+        <li>security-html-reporter reports</li>
+      </ol>
+    </div>
+    <div class="prompt-card">
+      <h4>/scan</h4>
+      <p>Single-agent SAST pipeline — security-auditor runs all phases end to end.</p>
+      <span class="cmd">scan.prompt.md</span>
+      <ol>
+        <li>Phase 1: sast-analysis → sast-context.md</li>
+        <li>Phase 2: Function tree + 28 vulnerability skills</li>
+        <li>Phase 3: sast-report → sast-report.md</li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+<!-- SEVERITY -->
+<div class="section" id="severity">
+  <h2>Severity Definitions</h2>
+  <div class="severity-bar">
+    <span class="sev-pill sev-critical">CRITICAL</span>
+    <span class="sev-pill sev-high">HIGH</span>
+    <span class="sev-pill sev-medium">MEDIUM</span>
+    <span class="sev-pill sev-low">LOW</span>
+    <span class="sev-pill sev-info">INFO</span>
+  </div>
+  <table class="schema-table">
+    <thead><tr><th>Severity</th><th>Criteria</th><th>CVSS Band</th></tr></thead>
+    <tbody>
+      <tr><td><span class="sev-pill sev-critical">CRITICAL</span></td><td>Remote, unauthenticated, exploitable with a single HTTP request. Data exfiltration, RCE, auth bypass at the application perimeter.</td><td>9.0–10.0</td></tr>
+      <tr><td><span class="sev-pill sev-high">HIGH</span></td><td>Authenticated exploit, or chained with one other issue. Lateral movement, privilege escalation, significant data exposure.</td><td>7.0–8.9</td></tr>
+      <tr><td><span class="sev-pill sev-medium">MEDIUM</span></td><td>Requires specific conditions (race window, admin context, non-default config). Limited blast radius.</td><td>4.0–6.9</td></tr>
+      <tr><td><span class="sev-pill sev-low">LOW</span></td><td>Defense-in-depth gap, best-practice violation, no direct exploitability. Informational hardening items.</td><td>0.1–3.9</td></tr>
+      <tr><td><span class="sev-pill sev-info">INFO</span></td><td>Observed pattern, not a vulnerability. Worth noting for architecture review.</td><td>—</td></tr>
+    </tbody>
+  </table>
+
+  <h3>False Positive Suppression</h3>
+  <ul style="font-size:.85rem;color:var(--text-muted);padding-left:1.5rem;margin-top:.5rem;">
+    <li><code>PreparedStatement</code> with correct parameterization</li>
+    <li><code>ObjectInputStream</code> inside test harnesses with no network surface</li>
+    <li>Hardcoded credentials that are clearly test/mock values</li>
+    <li>Path operations on classpath-derived resources only</li>
+    <li>Reflected XSS in <code>application/json</code> endpoints</li>
+  </ul>
+
+  <h3>Java-Specific Always-On Rules</h3>
+  <ul style="font-size:.85rem;color:var(--text-muted);padding-left:1.5rem;margin-top:.5rem;">
+    <li><code>csrf().disable()</code> → always flagged (MEDIUM minimum)</li>
+    <li><code>@Transactional</code> bypassed via direct field injection → suspicious</li>
+    <li><code>@RequestMapping</code> without auth annotation → potential unauthenticated endpoint</li>
+    <li><code>@SuppressWarnings("unchecked")</code> on deserialization code → extra scrutiny</li>
+    <li>Lombok <code>@Data</code> on JPA entities with bidirectional relationships → LOW if Jackson present</li>
+  </ul>
+</div>
+
+<!-- SCHEMA -->
+<div class="section" id="schema">
+  <h2>Finding Schema</h2>
+  <p style="color:var(--text-muted);margin-bottom:.5rem;">Every Phase 2 skill emits JSON findings conforming to <code>.github/schemas/finding.schema.json</code>.</p>
+  <table class="schema-table">
+    <thead><tr><th>Field</th><th>Type</th><th>Status</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>id</code></td><td>string</td><td><span class="req">Required</span></td><td>Unique finding ID, format: <code>SKILL-NNN</code> (e.g., SQLI-001)</td></tr>
+      <tr><td><code>skill</code></td><td>enum</td><td><span class="req">Required</span></td><td>Which Phase 2 skill produced this finding</td></tr>
+      <tr><td><code>cwe</code></td><td>string</td><td><span class="req">Required</span></td><td>Primary CWE identifier (e.g., CWE-89)</td></tr>
+      <tr><td><code>owasp</code></td><td>string</td><td><span class="opt">Optional</span></td><td>OWASP Top 10 2021 category</td></tr>
+      <tr><td><code>severity</code></td><td>enum</td><td><span class="req">Required</span></td><td>Critical | High | Medium | Low | Informational</td></tr>
+      <tr><td><code>confidence</code></td><td>enum</td><td><span class="req">Required</span></td><td>High | Medium | Low</td></tr>
+      <tr><td><code>file</code></td><td>string</td><td><span class="req">Required</span></td><td>Path relative to repo root</td></tr>
+      <tr><td><code>line</code></td><td>integer</td><td><span class="req">Required</span></td><td>Line number of the sink expression</td></tr>
+      <tr><td><code>column</code></td><td>integer</td><td><span class="opt">Optional</span></td><td>Column number of the sink</td></tr>
+      <tr><td><code>method</code></td><td>string</td><td><span class="opt">Optional</span></td><td>Enclosing method name</td></tr>
+      <tr><td><code>class</code></td><td>string</td><td><span class="opt">Optional</span></td><td>Fully qualified class name</td></tr>
+      <tr><td><code>evidence</code></td><td>string</td><td><span class="req">Required</span></td><td>Exact code snippet (1–3 lines)</td></tr>
+      <tr><td><code>sink</code></td><td>string</td><td><span class="req">Required</span></td><td>Dangerous API being called</td></tr>
+      <tr><td><code>source</code></td><td>string</td><td><span class="req">Required</span></td><td>Where tainted data originates</td></tr>
+      <tr><td><code>taint_path</code></td><td>array</td><td><span class="opt">Optional</span></td><td>Intermediate steps [{step, file, line}]</td></tr>
+      <tr><td><code>sanitizer_present</code></td><td>boolean</td><td><span class="req">Required</span></td><td>True if any sanitizer found (forces confidence ≤ Medium)</td></tr>
+      <tr><td><code>sanitizer_detail</code></td><td>string</td><td><span class="opt">Optional</span></td><td>Why the sanitizer may be insufficient</td></tr>
+      <tr><td><code>remediation</code></td><td>string</td><td><span class="req">Required</span></td><td>Specific fix instruction referencing actual code</td></tr>
+      <tr><td><code>references</code></td><td>array</td><td><span class="opt">Optional</span></td><td>CWE links, OWASP pages, CVE numbers</td></tr>
+      <tr><td><code>false_positive_indicators</code></td><td>array</td><td><span class="opt">Optional</span></td><td>Patterns that reduce confidence</td></tr>
+      <tr><td><code>duplicate_of</code></td><td>string|null</td><td><span class="opt">Optional</span></td><td>Set by Phase 3 only if duplicate</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- HOOKS -->
+<div class="section" id="hooks">
+  <h2>Git Hooks</h2>
+  <div class="hook-card">
+    <h4>Pre-Commit Hook</h4>
+    <p style="color:var(--text-muted);font-size:.85rem;margin:.3rem 0;">Lightweight review before committing Java changes.</p>
+    <p style="color:var(--text-muted);font-size:.83rem;"><strong>Triggers on:</strong> <code>*.java</code>, <code>*.xml</code>, <code>*.properties</code>, <code>*.yml</code>, <code>*.yaml</code>, <code>pom.xml</code>, <code>build.gradle</code>, <code>build.gradle.kts</code></p>
+    <ol>
+      <li>Inspect only changed files and related callers/callees</li>
+      <li>Run <code>sast-analysis</code> if entry points, security config, or deps changed</li>
+      <li>Run relevant Phase 2 skills for changed surfaces (SQL→sqli, auth→auth/idor/csrf, XML→xxe, etc.)</li>
+      <li>Report only actionable findings with changed-line evidence</li>
+    </ol>
+    <p style="color:var(--text-muted);font-size:.83rem;margin-top:.5rem;"><strong>Blocking:</strong> Only Critical or High confidence findings block the commit.</p>
+  </div>
+  <div class="hook-card">
+    <h4>Pre-Push Hook</h4>
+    <p style="color:var(--text-muted);font-size:.85rem;margin:.3rem 0;">Broader review before pushing Java application changes.</p>
+    <ol>
+      <li>Refresh <code>sast-context.md</code> via <code>sast-analysis</code></li>
+      <li>Run all matching Phase 2 skills</li>
+      <li>Run <code>sast-dependency</code> if manifests changed</li>
+      <li>Consolidate with <code>sast-report</code></li>
+      <li>Highlight new Critical or High findings first</li>
+    </ol>
+    <p style="color:var(--text-muted);font-size:.83rem;margin-top:.5rem;"><strong>Blocking:</strong> Confirmed Critical and remotely-reachable High findings block the push.</p>
+  </div>
+</div>
+
+<!-- FILE LAYOUT -->
+<div class="section" id="layout">
+  <h2>Repository File Layout</h2>
+  <div class="file-tree">
+<span class="dir">.github/</span>
+├── <span class="file">copilot-instructions.md</span> <span class="comment">← Always-on global rules</span>
+├── <span class="dir">agents/</span>
+│   ├── <span class="file">security-orchestrator.agent.md</span>
+│   ├── <span class="file">security-lead.agent.md</span>
+│   ├── <span class="file">security-engineer.agent.md</span>
+│   ├── <span class="file">security-researcher.agent.md</span>
+│   ├── <span class="file">security-critic.agent.md</span>
+│   ├── <span class="file">security-remediator.agent.md</span>
+│   ├── <span class="file">security-html-reporter.agent.md</span>
+│   └── <span class="file">security-auditor.agent.md</span>
+├── <span class="dir">prompts/</span>
+│   ├── <span class="file">orchestrated-scan.prompt.md</span> <span class="comment">← /orchestrated-scan</span>
+│   ├── <span class="file">team-scan.prompt.md</span> <span class="comment">← /team-scan</span>
+│   └── <span class="file">scan.prompt.md</span> <span class="comment">← /scan</span>
+├── <span class="dir">schemas/</span>
+│   └── <span class="file">finding.schema.json</span> <span class="comment">← Finding validation schema</span>
+├── <span class="dir">skills/</span>
+│   ├── <span class="dir">sast-analysis/</span> <span class="comment">← Phase 1: Architecture recon</span>
+│   ├── <span class="dir">sast-function-tree/</span>
+│   ├── <span class="dir">sast-function-review/</span>
+│   ├── <span class="dir">sast-taint-tree/</span>
+│   ├── <span class="dir">sast-sqli/</span>  <span class="dir">sast-rce/</span>  <span class="dir">sast-xss/</span>  <span class="dir">sast-xxe/</span>
+│   ├── <span class="dir">sast-idor/</span>  <span class="dir">sast-auth/</span>  <span class="dir">sast-csrf/</span>  <span class="dir">sast-cors/</span>
+│   ├── <span class="dir">sast-ssrf/</span>  <span class="dir">sast-crypto/</span>  <span class="dir">sast-deserial/</span>
+│   ├── <span class="dir">sast-pathtraversal/</span>  <span class="dir">sast-file-upload/</span>
+│   ├── <span class="dir">sast-secrets/</span>  <span class="dir">sast-headers/</span>  <span class="dir">sast-logging/</span>
+│   ├── <span class="dir">sast-oauth/</span>  <span class="dir">sast-graphql/</span>  <span class="dir">sast-websocket/</span>
+│   ├── <span class="dir">sast-ldap/</span>  <span class="dir">sast-cache/</span>  <span class="dir">sast-dependency/</span>
+│   ├── <span class="dir">sast-openredirect/</span>  <span class="dir">sast-templateinject/</span>  <span class="dir">sast-massassignment/</span>
+│   ├── <span class="dir">sast-business-logic/</span>
+│   ├── <span class="dir">sast-researcher/</span>  <span class="dir">sast-api-abuse/</span>  <span class="dir">sast-attack-chain/</span>
+│   └── <span class="dir">sast-report/</span> <span class="comment">← Phase 3: Final report consolidation</span>
+├── <span class="dir">chatmodes/</span>
+│   └── <span class="file">security-auditor.chatmode.md</span>
+├── <span class="dir">hooks/</span>
+│   ├── <span class="file">pre-commit.md</span>
+│   └── <span class="file">pre-push.md</span>
+└── <span class="comment">Scan Artifacts (generated at runtime):</span>
+    ├── <span class="file">sast-context.md</span>
+    ├── <span class="file">sast-function-tree.md</span>
+    ├── <span class="file">sast-function-review.md</span>
+    ├── <span class="file">sast-taint-trees.md</span>
+    ├── <span class="file">sast-orchestration.md</span>
+    ├── <span class="file">sast-findings.jsonl</span>
+    ├── <span class="file">sast-critique.md</span>
+    ├── <span class="file">sast-remediation.md</span>
+    ├── <span class="file">sast-report.md</span>
+    └── <span class="file">sast-report.html</span>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  Security Agent Harness Visualizer &mdash; Generated from repository structure
+</div>
+
+<script>
+function filterSkills(category, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.skill-chip').forEach(chip => {
+    if (category === 'all') { chip.style.display = ''; return; }
+    const phase = chip.dataset.phase;
+    const cat = chip.dataset.category;
+    if (category === 'phase1' && phase === 'phase1') chip.style.display = '';
+    else if (category === 'phase2' && phase === 'phase2') chip.style.display = '';
+    else if (category === 'phase3' && phase === 'phase3') chip.style.display = '';
+    else if (category === 'meta' && cat === 'meta') chip.style.display = '';
+    else if (category === 'injection' && cat === 'injection') chip.style.display = '';
+    else if (category === 'access' && cat === 'access') chip.style.display = '';
+    else if (category === 'config' && cat === 'config') chip.style.display = '';
+    else chip.style.display = 'none';
+  });
+}
+</script>
+</body>
+</html>
