@@ -1,0 +1,31 @@
+name: harness-core-ci
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - f-feature-chatgpt
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Run Tests
+        working-directory: harness-core
+        run: |
+          chmod +x gradlew || true
+          ./gradlew test || gradle test
