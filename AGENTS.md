@@ -4,7 +4,7 @@ This file provides guidance to Codex (Codex.ai/code) when working with code in t
 
 ## Project Overview
 
-This is a **security code analysis harness** for Java applications — a modular SAST (Static Application Security Testing) system implemented as GitHub Copilot skills/prompts. There is no executable code; the deliverables are Markdown files that instruct AI agents how to perform security audits.
+This is a **security code analysis harness** for Java applications — a modular SAST (Static Application Security Testing) system implemented as GitHub Copilot skills/prompts. The repository now also contains an executable AST candidate scanner in `harness-core/`, a validated report pipeline in `tools/`, and regression fixtures in `tests/`. The Markdown skills complement these bounded checks with agent-led review. Never describe candidate detection as proof of exploitability or complete vulnerability coverage.
 
 ## Repository Layout (Planned)
 
@@ -63,3 +63,7 @@ The system runs in **three phases**:
 - **`copilot-instructions.md`** is always-on context; put rules here that apply across all skills (e.g., output format standards, severity definitions, scope constraints).
 - **`scan.prompt.md`** orchestrates the pipeline; it should invoke skills in order and pass Phase 1 output forward.
 - Skills must be self-contained — a skill should be runnable independently without requiring other skills to have already executed (Phase 1 output should be optional/fallback-safe).
+
+## Executable changes
+
+Use JavaParser ASTs for Java structure and data-flow analysis; do not replace them with source regexes. Run `./gradlew test installDist` from `harness-core/`, then `python3 -m unittest discover -s tests -v` from the repository root. Keep coverage gaps and incomplete scans visible. Do not execute a scanned application or its build.

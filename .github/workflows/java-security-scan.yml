@@ -1,0 +1,43 @@
+# Manual, read-only scan of this repository. To scan another Java repository,
+# use the CLI documented in README.md, or adapt checkout/path below.
+name: Java security candidate scan
+on:
+  workflow_dispatch:
+    inputs:
+      fail_on:
+        description: Provisional severity threshold (includes candidates)
+        type: choice
+        default: none
+        options: [none, Critical, High, Medium, Low, Informational]
+permissions:
+  contents: read
+  security-events: write
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Run candidate scan and quality gate
+        env:
+          FAIL_ON: ${{ inputs.fail_on }}
+        run: python tools/scan.py . --output scan-results/current --fail-on "$FAIL_ON"
+      - name: Upload SARIF to GitHub Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: scan-results/current/report.sarif
+          category: java-security-harness
+      - name: Save reports (including incomplete scans)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: java-security-report
+          path: scan-results/current/

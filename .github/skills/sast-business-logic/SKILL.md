@@ -230,7 +230,7 @@ Follow the canonical format from `copilot-instructions.md`. Example:
 
 **Vulnerable Code:**
 ```java
-@Transactional  // READ_COMMITTED (default) — does not prevent concurrent reads
+@Transactional  // Isolation.DEFAULT: inspect the actual database isolation and locking
 public void withdraw(Long accountId, BigDecimal amount) {
     Account account = accountRepository.findById(accountId).orElseThrow();
     if (account.getBalance().compareTo(amount) < 0) {
@@ -243,7 +243,7 @@ public void withdraw(Long accountId, BigDecimal amount) {
 ```
 
 **Why Exploitable:**
-`@Transactional` with `READ_COMMITTED` (the default) does not prevent two concurrent transactions from both reading the same balance, both passing the check, and both committing a deduction. An attacker sends identical withdrawal requests in rapid succession, causing a double-spend without sufficient funds.
+`@Transactional` when the actual database isolation is `READ_COMMITTED` does not prevent two concurrent transactions from both reading the same balance, both passing the check, and both committing a deduction. An attacker sends identical withdrawal requests in rapid succession, causing a double-spend without sufficient funds.
 
 **Proof-of-Concept:**
 ```bash
@@ -272,3 +272,7 @@ JSONL line (append to `.github/sast-findings.jsonl`):
 ```json
 {"id":"BIZ-001","skill":"sast-business-logic","cwe":"CWE-362","owasp":"A04:2021-Insecure Design","severity":"High","confidence":"High","file":"src/main/java/com/example/PaymentService.java","line":55,"method":"withdraw","class":"com.example.PaymentService","evidence":"Account account = accountRepository.findById(accountId).orElseThrow();\nif (account.getBalance().compareTo(amount) < 0) { throw ...; }\naccount.setBalance(account.getBalance().subtract(amount));\naccountRepository.save(account);","sink":"accountRepository.save()","source":"POST /api/withdraw amount parameter","taint_path":[],"sanitizer_present":false,"sanitizer_detail":"","remediation":"Use PESSIMISTIC_WRITE lock on findById or atomic UPDATE query with balance >= amount predicate","references":["https://cwe.mitre.org/data/definitions/362.html"],"false_positive_indicators":[],"duplicate_of":null}
 ```
+
+## Executable AI review
+
+Run `python3 <harness-root>/tools/scan.py <target> --ai-review codex --business-context <rules.md> --output <new-directory>` to create local source packets and invoke the source reviewer plus critic. Findings must include attack_vector, attack_steps, prerequisites, business_invariant, missing_control, impact, assumptions, and test_idea. Keep unverified issues as candidates and distinguish inferred business rules from supplied requirements. Use exact 1–3-line evidence snippets; never use ellipses or fabricated code.

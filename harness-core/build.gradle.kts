@@ -4,11 +4,7 @@ plugins {
 }
 
 group = "dev.securityharness"
-version = "0.1.0"
-
-repositories {
-    mavenCentral()
-}
+version = "0.2.0"
 
 java {
     toolchain {
@@ -18,6 +14,7 @@ java {
 
 dependencies {
     implementation("com.github.javaparser:javaparser-symbol-solver-core:3.27.0")
+    implementation("com.google.code.gson:gson:2.12.1")
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
 }
