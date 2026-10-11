@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# Security harness pre-push hook.
+# Install: cp .github/hooks/pre-push .git/hooks/pre-push && chmod +x .git/hooks/pre-push
+#
+# Runs a full scan of the diff between HEAD and the remote ref before push.
+# Blocks on Critical or High candidates. Scan output is saved to scan-results/pre-push/.
+set -euo pipefail
+
+HARNESS_ROOT="$(git rev-parse --show-toplevel)"
+SCAN_PY="$HARNESS_ROOT/tools/scan.py"
+
+if [[ ! -f "$SCAN_PY" ]]; then
+  exit 0
+fi
+
+# Read push refs from stdin (format: <local-ref> <local-sha> <remote-ref> <remote-sha>)
+while read -r local_ref local_sha remote_ref remote_sha; do
+  # Skip deletes
+  if [[ "$local_sha" == "0000000000000000000000000000000000000000" ]]; then
+    continue
+  fi
+
+  BRANCH=$(git rev-parse --abbrev-ref HEAD)
+  echo "Security harness: full scan before push of $BRANCH..."
+
+  OUTPUT="$HARNESS_ROOT/scan-results/pre-push"
+  DIST="$HARNESS_ROOT/harness-core/build/install/harness-core"
+  BUILD_FLAG=""
+  if [[ -d "$DIST" ]]; then
+    BUILD_FLAG="--no-build"
+  fi
+
+  set +e
+  python3 "$SCAN_PY" "$HARNESS_ROOT" $BUILD_FLAG \
+    --output "$OUTPUT" \
+    --fail-on High \
+    2>&1
+  EXIT_CODE=$?
+  set -e
+
+  if [[ $EXIT_CODE -eq 2 ]]; then
+    echo "Security harness: scan incomplete — push blocked. Fix errors and retry." >&2
+    echo "To push anyway: git push --no-verify" >&2
+    exit 1
+  fi
+
+  if [[ $EXIT_CODE -eq 1 ]]; then
+    echo "" >&2
+    echo "Security harness: Critical or High candidate(s) found. Push blocked." >&2
+    echo "Report: $OUTPUT/report.html" >&2
+    echo "To push anyway: git push --no-verify" >&2
+    exit 1
+  fi
+
+  echo "Security harness: no Critical/High findings. Report: $OUTPUT/report.html"
+done
+
+exit 0

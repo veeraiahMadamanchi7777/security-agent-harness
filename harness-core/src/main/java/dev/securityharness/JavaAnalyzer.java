@@ -278,7 +278,7 @@ public final class JavaAnalyzer {
         String key = file + ":" + line(sink) + ":" + sink.getBegin().orElseThrow().column + ":" + rule;
         if (emitted.containsKey(key)) return;
         Map<String, Object> f = new LinkedHashMap<>();
-        f.put("code", rule.name()); f.put("skill", "sast-" + rule.skill); f.put("cwe", "CWE-" + rule.cwe); f.put("severity", rule.severity);
+        f.put("code", rule.name()); f.put("skill", "sast-" + rule.skill); f.put("cwe", "CWE-" + rule.cwe); f.put("owasp", rule.owasp); f.put("severity", rule.severity);
         f.put("confidence", flow.tainted() && !flow.uncertain ? "Medium" : "Low"); f.put("status", "candidate");
         f.put("file", file); f.put("line", line(sink)); f.put("column", sink.getBegin().orElseThrow().column);
         f.put("method", m == null ? "<field>" : m.getNameAsString()); f.put("class", owner.getNameAsString());

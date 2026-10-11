@@ -8,10 +8,13 @@
     "id",
     "skill",
     "cwe",
+    "owasp",
     "severity",
     "confidence",
     "file",
     "line",
+    "method",
+    "class",
     "evidence",
     "sink",
     "source",
@@ -65,7 +68,8 @@
         "sast-file-upload",
         "sast-cache",
         "sast-headers",
-        "sast-logging"
+        "sast-logging",
+        "sast-grpc"
       ]
     },
     "cwe": {
@@ -78,9 +82,17 @@
         "CWE-639"
       ]
     },
+    "cvss_vector": {
+      "type": "string",
+      "description": "CVSS v3.1 vector string (optional but strongly recommended for Critical/High)",
+      "pattern": "^CVSS:3\\.1/",
+      "examples": [
+        "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+      ]
+    },
     "owasp": {
       "type": "string",
-      "description": "OWASP Top 10 2021 category (optional)",
+      "description": "OWASP Top 10 2021 category",
       "examples": [
         "A03:2021-Injection",
         "A01:2021-Broken Access Control",

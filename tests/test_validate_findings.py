@@ -10,8 +10,10 @@ SCHEMA_DATA = json.loads(SCHEMA.read_text(encoding="utf-8"))
 def sample():
     return {
         "id": "SQLI-001", "skill": "sast-sqli", "cwe": "CWE-89",
+        "owasp": "A03:2021-Injection",
         "severity": "High", "confidence": "Medium",
         "file": "src/UserDao.java", "line": 12,
+        "method": "findUser", "class": "com.example.UserDao",
         "evidence": "statement.executeQuery(sql);",
         "sink": "Statement.executeQuery()", "source": "request parameter",
         "sanitizer_present": False, "remediation": "Use a prepared statement",

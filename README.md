@@ -92,6 +92,17 @@ python3 tools/scan.py /path/to/java-project --no-build \
 
 Reviewed findings are validated against current source before report publication. They replace matching candidate IDs; mismatched ID collisions or fabricated evidence fail. A status label is the reviewer's assertion, not an independent proof by the harness. Reports can contain sensitive source snippets; credential findings themselves redact their literal.
 
+### Install git hooks
+
+Optional pre-commit and pre-push hooks run the scanner automatically before commits and pushes:
+
+```bash
+cp .github/hooks/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+cp .github/hooks/pre-push   .git/hooks/pre-push   && chmod +x .git/hooks/pre-push
+```
+
+The pre-commit hook scans changed files and blocks on Critical/High candidates. The pre-push hook runs a full scan. Both accept `--no-verify` to bypass when needed.
+
 ### Verify the harness
 
 ```bash

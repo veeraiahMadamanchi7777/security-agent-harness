@@ -2,7 +2,7 @@ name: Harness CI
 on:
   pull_request:
   push:
-    branches: [main, feature/executable-security-harness]
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read

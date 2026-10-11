@@ -11,6 +11,7 @@ on:
         options: [none, Critical, High, Medium, Low, Informational]
 permissions:
   contents: read
+  security-events: write
 jobs:
   scan:
     runs-on: ubuntu-latest
@@ -28,6 +29,12 @@ jobs:
         env:
           FAIL_ON: ${{ inputs.fail_on }}
         run: python tools/scan.py . --output scan-results/current --fail-on "$FAIL_ON"
+      - name: Upload SARIF to GitHub Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: scan-results/current/report.sarif
+          category: java-security-harness
       - name: Save reports (including incomplete scans)
         if: always()
         uses: actions/upload-artifact@v4

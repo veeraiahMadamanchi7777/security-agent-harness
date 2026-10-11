@@ -20,7 +20,7 @@ except ImportError:
 SEVERITIES = ['Critical', 'High', 'Medium', 'Low', 'Informational']
 COVERED = {'sqli', 'rce', 'pathtraversal', 'deserial', 'openredirect', 'xss', 'ssrf', 'ldap', 'templateinject', 'xxe', 'crypto', 'secrets'}
 REVIEW_ONLY = ['idor', 'auth', 'business-logic', 'csrf', 'cors', 'oauth', 'graphql', 'websocket',
-               'file-upload', 'cache', 'headers', 'logging', 'massassignment', 'dependency', 'api-abuse', 'attack-chain']
+               'file-upload', 'cache', 'headers', 'logging', 'massassignment', 'dependency', 'api-abuse', 'attack-chain', 'grpc']
 OUTPUTS = ['facts.json', 'graph.json', 'review-queue.json', 'findings.jsonl', 'report.md', 'report.html', 'report.sarif', 'summary.json']
 
 
