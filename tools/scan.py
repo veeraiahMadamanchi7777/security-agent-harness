@@ -5,6 +5,7 @@ import hashlib
 import html
 import json
 import os
+import shutil
 from pathlib import Path
 import subprocess
 import sys
@@ -89,9 +90,21 @@ def render_reports(directory, facts, findings, summary):
                    '    ' + f['evidence'].replace('\n', '\n    '), '', 'Remediation: ' + f['remediation'], '',
                    'Review: ' + ' '.join(f.get('false_positive_indicators', [])), ''])
         steps = ''.join(f"<li>{esc(s['file'])}:{s['line']} — {esc(s['step'])}</li>" for s in f.get('taint_path', []))
+        attack = ''
+        if f.get('attack_vector'):
+            md.extend(['Attack vector: ' + f['attack_vector'], '', 'Business invariant: ' + f['business_invariant'], '',
+                       'Prerequisites: ' + '; '.join(f['prerequisites']), '', 'Attack steps:', ''] +
+                      [f'{i}. {step}' for i, step in enumerate(f['attack_steps'], 1)] +
+                      ['', 'Impact: ' + f['impact'], '', 'Missing control: ' + f['missing_control'], '',
+                       'Assumptions: ' + '; '.join(f['assumptions']), '', 'Regression test: ' + f['test_idea'], ''])
+            attack = (f"<h3>Attack vector</h3><p>{esc(f['attack_vector'])}</p><p><strong>Business invariant:</strong> {esc(f['business_invariant'])}</p>"
+                      f"<p><strong>Prerequisites:</strong> {esc('; '.join(f['prerequisites']))}</p><ol>" +
+                      ''.join('<li>' + esc(step) + '</li>' for step in f['attack_steps']) +
+                      f"</ol><p><strong>Impact:</strong> {esc(f['impact'])}</p><p><strong>Missing control:</strong> {esc(f['missing_control'])}</p>"
+                      f"<p><strong>Assumptions:</strong> {esc('; '.join(f['assumptions']))}</p><p><strong>Regression test:</strong> {esc(f['test_idea'])}</p>")
         sections.append(f"<article><h2>{esc(heading)}</h2><p>{esc(location)}</p><p>Confidence: {esc(f['confidence'])}</p>"
                         f"<p>Source: {esc(f['source'])}<br>Sink: {esc(f['sink'])}</p><pre>{esc(f['evidence'])}</pre>"
-                        f"<ol>{steps}</ol><p><strong>Remediation:</strong> {esc(f['remediation'])}</p>"
+                        f"<ol>{steps}</ol>{attack}<p><strong>Remediation:</strong> {esc(f['remediation'])}</p>"
                         f"<p><strong>Review:</strong> {esc(' '.join(f.get('false_positive_indicators', [])))}</p></article>")
     if not findings:
         md.extend(['No candidates were emitted within this rule set and scan scope.', ''])
@@ -103,6 +116,10 @@ def render_reports(directory, facts, findings, summary):
         rows.append(f"<tr><td>{esc(item['skill'])}</td><td>{esc(item['status'])}</td></tr>")
     md.extend(['', '## Limitations', ''] + ['- ' + x for x in facts.get('limitations', [])])
     md.extend(['', '## Excluded paths', ''] + ['- ' + x for x in facts.get('excludedPaths', [])])
+    ai = summary.get('ai_review', {'status': 'disabled'})
+    md.extend(['', '## AI security and business-logic review', '', 'Status: ' + ai['status'], '',
+               'Coverage is model-reported; completed review is not proof of complete detection.', ''] +
+              ['- ' + q for q in ai.get('unresolved_questions', [])])
     (directory / 'report.md').write_text('\n'.join(md) + '\n', encoding='utf-8')
     errors = ''.join('<li>' + esc(e) + '</li>' for e in summary['errors']) or '<li>None.</li>'
     limitations = ''.join('<li>' + esc(e) + '</li>' for e in facts.get('limitations', []))
@@ -112,7 +129,8 @@ def render_reports(directory, facts, findings, summary):
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
 <title>{title}</title><style>body{{font:16px/1.6 system-ui;max-width:1050px;margin:40px auto;padding:0 24px;color:#142638;background:#f4f7fa}}article{{background:white;padding:20px;margin:20px 0;border:1px solid #cbd5df;border-radius:8px}}pre{{white-space:pre-wrap;overflow-wrap:anywhere;background:#edf2f6;padding:16px}}td{{padding:6px 18px;border-bottom:1px solid #ccd6df}}.notice{{padding:16px;background:#fff1c9}}h1,h2{{line-height:1.25}}</style>
 <h1>{title}</h1><p>{esc(intro)}</p><p class="notice">{esc(warning)}</p>{''.join(sections)}
-<h2>Errors</h2><ul>{errors}</ul><h2>Coverage and required review</h2><table><tr><th>Skill</th><th>Status</th></tr>{''.join(rows)}</table>
+<h2>AI security and business-logic review</h2><p>Status: {esc(ai['status'])}. Coverage is model-reported, not proof of complete detection.</p><ul>{''.join('<li>' + esc(q) + '</li>' for q in ai.get('unresolved_questions', []))}</ul>
+<h2>Errors</h2><ul>{errors}</ul><h2>Static coverage and required review</h2><table><tr><th>Skill</th><th>Status</th></tr>{''.join(rows)}</table>
 <h2>Limitations</h2><ul>{limitations}</ul><h2>Excluded paths</h2><ul>{exclusions}</ul></html>'''
     (directory / 'report.html').write_text(page, encoding='utf-8')
 
@@ -151,6 +169,35 @@ def run(args):
         validation_errors = [f"{f.get('id', '?')}: {e}" for f in findings for e in validate(f, schema, target)]
         if validation_errors:
             raise ValueError('Generated findings failed evidence validation: ' + '; '.join(validation_errors))
+        ai_state = {'status': 'disabled'}
+        artifacts = list(OUTPUTS)
+        if args.ai_review != 'off':
+            try:
+                try:
+                    from .ai_review import review
+                except ImportError:
+                    from ai_review import review
+                ai_findings, ai_state = review(target, stage / 'ai-review', facts, findings, args)
+            except (OSError, ValueError, subprocess.SubprocessError) as exc:
+                # Keep the source packet, prompts and diagnostics available for inspection/retry.
+                output.mkdir(exist_ok=True)
+                if (stage / 'ai-review').exists():
+                    shutil.copytree(stage / 'ai-review', output / 'ai-review')
+                write_json(output / 'summary.json', dict(complete=False, errors=[str(exc)], ai_review={'status': 'failed'}))
+                raise
+            static_locations = {(f['skill'], f['file'], f['line']): i for i, f in enumerate(findings)}
+            for finding in ai_findings:
+                key = (finding['skill'], finding['file'], finding['line'])
+                if key in static_locations:
+                    index = static_locations.pop(key)
+                    finding['id'] = findings[index]['id']
+                    findings[index] = finding
+                else:
+                    # Distinct business controls can be missing at the same line.
+                    findings.append(finding)
+            artifacts.append('ai-review')
+            if ai_state['status'] == 'partial':
+                errors.append('AI review did not cover all source batches/files; inspect ai-review/state.json')
         if args.reviewed_findings:
             reviewed, issues = read_findings(args.reviewed_findings, target)
             if issues:
@@ -176,7 +223,7 @@ def run(args):
                        findings=len(findings), candidates=sum(f.get('status', 'candidate') == 'candidate' for f in findings),
                        confirmed=sum(f.get('status') == 'confirmed' for f in findings), errors=errors,
                        severity_gate_failed=gate, fail_on=args.fail_on,
-                       coverage=coverage(), artifacts=OUTPUTS)
+                       coverage=coverage(), artifacts=artifacts, ai_review=ai_state)
         write_json(stage / 'facts.json', facts)
         write_json(stage / 'graph.json', graph(facts, findings))
         write_json(stage / 'review-queue.json', dict(coverage=coverage(), candidate_ids=[f['id'] for f in findings if f.get('status', 'candidate') == 'candidate']))
@@ -189,7 +236,7 @@ def run(args):
         summary['source_sha256'] = facts.get('sourceSha256', {})
         write_json(stage / 'summary.json', summary)
         output.mkdir(exist_ok=True)
-        for name in OUTPUTS:
+        for name in artifacts:
             (stage / name).replace(output / name)
     print(f"{summary['findings']} findings ({summary['candidates']} candidates); complete={summary['complete']}; reports: {output}")
     return 2 if not summary['complete'] else 1 if gate else 0
@@ -204,6 +251,15 @@ def main(argv=None):
     parser.add_argument('--reviewed-findings', type=Path, help='validated reviewer findings, replacing matching candidate IDs')
     parser.add_argument('--fail-on', choices=['none'] + SEVERITIES, default='none', help='fail on candidates/confirmed findings at or above this severity')
     parser.add_argument('--timeout', type=int, default=300)
+    parser.add_argument('--ai-review', choices=['off', 'prepare', 'codex'], default='off',
+                        help='prepare local source/prompt packets or run opt-in Codex security and business-logic review')
+    parser.add_argument('--business-context', type=Path, help='application roles, intended business rules, trust boundaries and workflows')
+    parser.add_argument('--ai-command', default='codex', help='Codex executable name or path')
+    parser.add_argument('--ai-model', help='optional model override; otherwise use the CLI default')
+    parser.add_argument('--ai-timeout', type=int, default=600, help='timeout in seconds for each AI pass')
+    parser.add_argument('--ai-batch-bytes', type=int, default=120000, help='maximum source bytes per AI analysis batch')
+    parser.add_argument('--ai-max-batches', type=int, default=12, help='explicit bound on AI source-review calls, plus one critic call')
+    parser.add_argument('--ai-critic-bytes', type=int, default=400000, help='maximum critic packet bytes; oversized packets fail explicitly')
     args = parser.parse_args(argv)
     try:
         return run(args)

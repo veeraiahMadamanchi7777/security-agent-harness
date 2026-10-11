@@ -144,6 +144,24 @@ class ScanIntegrationTests(unittest.TestCase):
             self.assertEqual(2, run.returncode)
             self.assertEqual('keep', (root / 'keep.txt').read_text())
 
+    def test_ai_prepare_retains_source_and_prompts_without_model(self):
+        with tempfile.TemporaryDirectory() as temp:
+            output = Path(temp) / 'out'
+            run = self.invoke(ROOT / 'tests/fixtures/business', output, '--ai-review', 'prepare')
+            self.assertEqual(0, run.returncode, run.stderr)
+            self.assertEqual('prepared', json.loads((output / 'summary.json').read_text())['ai_review']['status'])
+            self.assertTrue((output / 'ai-review/source/CheckoutController.java').exists())
+            self.assertTrue((output / 'ai-review/analysis-001.prompt.txt').exists())
+
+    def test_ai_failure_retains_packet_and_incomplete_summary(self):
+        with tempfile.TemporaryDirectory() as temp:
+            output = Path(temp) / 'out'
+            run = self.invoke(ROOT / 'tests/fixtures/business', output, '--ai-review', 'codex', '--ai-command', 'nonexistent-test-reviewer-123')
+            self.assertEqual(2, run.returncode)
+            self.assertFalse(json.loads((output / 'summary.json').read_text())['complete'])
+            self.assertTrue((output / 'ai-review/source/CheckoutController.java').exists())
+            self.assertFalse((output / 'report.html').exists())
+
     def test_reviewed_findings_can_dismiss_candidates(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp); target = ROOT / 'tests/fixtures/vulnerable'

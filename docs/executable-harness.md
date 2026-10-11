@@ -32,7 +32,7 @@ Sources: explicit Spring `RequestParam`, `PathVariable`, `RequestBody`, `Request
 
 Type matching is syntactic, not complete symbol resolution. External methods conservatively propagate taint and lower confidence; same-class overloads are not disambiguated. There is no complete control-flow/path-feasibility analysis, cross-file dynamic dispatch, heap/alias/field taint, implicit flows, or framework-wide lifecycle model. Traces contain conservative evidence steps and must not be interpreted as proven feasible runtime paths.
 
-The report's review queue explicitly lists IDOR, auth, business logic, CSRF, CORS, OAuth, GraphQL, WebSocket, file-upload policy, cache behavior, headers, logging, mass assignment, dependency CVEs, API abuse and attack chains as requiring review. Their existing skill instructions remain available. No hosted model, dependency vulnerability database, or runtime exploit testing is called by the CLI.
+The report's review queue explicitly lists IDOR, auth, business logic, CSRF, CORS, OAuth, GraphQL, WebSocket, file-upload policy, cache behavior, headers, logging, mass assignment, dependency CVEs, API abuse and attack chains as requiring review. Their existing skill instructions remain available. The default CLI does not call a model. `--ai-review codex` adds the source-aware AI review described below; no dependency vulnerability database or runtime exploit testing is used.
 
 ## Controlled verification
 
@@ -69,3 +69,15 @@ The generated SARIF and findings were also independently validated using `jsonsc
 Java 17, Python 3.10+, and initial network access for pinned Gradle/build dependencies are required. The wrapper verifies the Gradle distribution SHA-256. After building, `--no-build` scans offline. Source reports remain local unless the caller uploads them; the CI example uploads only its controlled fixture report. Raw source snippets may contain sensitive context even though credential-rule evidence is redacted.
 
 Exit 0 means the configured scan and quality gate completed within supported scope, not that the application is secure. Exit 1 means a candidate/confirmed finding meets the chosen severity threshold. Exit 2 means the scan is incomplete or failed. Independent validator exits are 0 for valid findings, 1 for validation failures, and 2 for invalid command usage.
+
+## AI business-logic and attack review
+
+`--ai-review codex` snapshots Java source plus selected XML, YAML, properties, SQL and build configuration, then reviews explicit source batches with a signed-in Codex CLI. Supply application requirements using `--business-context`. The model receives source as untrusted text; source AGENTS/config instructions, shell tools and web search are disabled. No target code is run. This mode sends the selected text to the model and consumes account usage. `--ai-review prepare` only creates local packets.
+
+Every AI proposal must include an attack vector, ordered abuse steps, prerequisites, business invariant, missing control, impact, assumptions, remediation and a regression-test idea. Each analysis response is schema- and source-validated before a separate synthesis/critic pass can accept it. Neither the generator nor critic can emit a confirmed status. Evidence validation establishes file/snippet correspondence, not exploitability.
+
+The critic receives proposed findings, business context, analysis observations and complete source files referenced by candidate evidence. It does not automatically see every unrelated file: omitted cross-file controls remain an uncertainty. Every analysis batch records model-reported reviewed files; any omitted batch/file or unreadable supporting source yields partial status and exit 2. Batch/critic size limits fail explicitly, not by truncating code. API/CLI failures retain packets and logs under `ai-review/` with an incomplete summary.
+
+The local snapshot, manifest, prompts, outputs, logs and state provide a reviewable record. They may contain sensitive source/configuration and should not be published automatically. The [official Codex non-interactive documentation](https://developers.openai.com/codex/noninteractive) describes the schema-constrained CLI output used by this integration.
+
+The deterministic CI suite uses mocked AI responses to test contracts, critic rejection, missing context, fabricated evidence, snapshot scope and attack-report rendering without requiring model credentials. Live model behavior is nondeterministic and must be evaluated separately against controlled source fixtures; no general-world recall claim is made.

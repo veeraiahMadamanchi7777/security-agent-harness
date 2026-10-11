@@ -38,6 +38,41 @@ Outputs:
 | `report.sarif` | SARIF 2.1.0 results for compatible code-scanning tools |
 | `summary.json` | Completion status, severity gate, counts, source digests, and artifact inventory |
 
+### AI review for business gaps and attack vectors
+
+To review the source with AI as well as the deterministic rules, use a signed-in Codex CLI:
+
+```bash
+python3 tools/scan.py /path/to/java-project --ai-review codex \
+  --business-context /path/to/business-rules.md --output scan-results/full-review
+```
+
+Start with [the business-context template](examples/business-context.md). The optional business-rules file should describe roles, ownership/tenant rules, prices/payments/refunds, workflow states, permissions, concurrency requirements, limits, and intended invariants. Without it, the AI must distinguish inferred rules from known requirements.
+
+This mode sends selected source/configuration text and business context to the model through your Codex account. It uses account usage and requires network access. Review runs are text-only: no target execution, shell tools, web browsing or source-provided agent instructions. An analysis pass reviews each bounded source batch; a separate synthesis/critic pass challenges proposed attack scenarios and missing controls. Supply `--ai-model` to select a model; otherwise the CLI default is used.
+
+The AI reviews security categories **and** business abuse: ownership/tenant bypass, price manipulation, negative quantities/amounts, workflow/payment/approval bypass, replay, refund/coupon/OTP abuse, race conditions and quota abuse. Each finding includes:
+
+- Attack vector and ordered hypothetical attack steps.
+- Required access and other prerequisites.
+- The violated business invariant, missing control and potential impact.
+- Exact code evidence, assumptions, remediation and a defensive regression-test idea.
+
+All AI findings remain candidates until independently reviewed. The validator checks their source evidence; it does not prove the attack will work. Missing files, oversized batches, timeouts, malformed responses and fabricated evidence cannot silently become a clean AI review.
+
+Artifacts are saved under `<output>/ai-review/`: `source/`, `manifest.json`, business context, prompts, model responses, logs, proposed/accepted findings and `state.json`. Failure diagnostics and the packet are retained even if AI processing fails. Source snapshots and prompts can contain sensitive information; handle the directory like the original source repository.
+
+```bash
+# Prepare local source and prompt packets without contacting any model.
+python3 tools/scan.py /path/to/java-project --ai-review prepare --output scan-results/packet
+
+# Demonstrate business review on the included intentionally vulnerable checkout/wallet fixture.
+python3 tools/scan.py tests/fixtures/business --no-build --ai-review codex \
+  --business-context tests/fixtures/business/BUSINESS.md --output scan-results/business-review
+```
+
+Default limits are 120KB of source per batch, 12 source batches plus one critic call, and 600 seconds per call. `--ai-batch-bytes`, `--ai-max-batches`, `--ai-critic-bytes`, and `--ai-timeout` make these limits explicit. No source is silently truncated. A completed AI run means its requested passes finished; it does not guarantee all vulnerabilities were found. The base command without `--ai-review` still runs locally without a model.
+
 ### Detection coverage
 
 The built-in rules emit **candidates** for SQL/JPQL injection, command construction/execution, path traversal, SSRF, open redirects, writer-based XSS, LDAP filter injection, script evaluation, native deserialization, XML parser use with untrusted input, weak crypto literals, and named hardcoded credential literals. File and ProcessBuilder construction are review points; their presence alone does not prove file access or command execution. XML parser configuration and output encoding require review. The script rule does not cover every template engine.

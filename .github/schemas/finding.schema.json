@@ -242,6 +242,47 @@
       "type": "integer",
       "minimum": 1,
       "description": "Number of source lines in a redacted snippet; the evidence gate accepts 1\u20133."
+    },
+    "attack_vector": {
+      "type": "string",
+      "minLength": 1
+    },
+    "business_invariant": {
+      "type": "string",
+      "minLength": 1
+    },
+    "impact": {
+      "type": "string",
+      "minLength": 1
+    },
+    "missing_control": {
+      "type": "string",
+      "minLength": 1
+    },
+    "test_idea": {
+      "type": "string",
+      "minLength": 1
+    },
+    "attack_steps": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "prerequisites": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "assumptions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
     }
   }
 }

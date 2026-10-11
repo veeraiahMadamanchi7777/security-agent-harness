@@ -122,6 +122,12 @@ def validate(record, schema, root=None):
             errors.append(f'{key}: must not be blank')
     if record.get('sanitizer_present') is True and record.get('confidence') == 'High':
         errors.append('sanitizer_present=true cannot have High confidence')
+    if 'attack_vector' in record:
+        for field in ('attack_steps', 'prerequisites', 'business_invariant', 'impact', 'missing_control', 'assumptions', 'test_idea'):
+            if field not in record:
+                errors.append(f'attack analysis: missing {field}')
+        if not record.get('attack_steps'):
+            errors.append('attack analysis: attack_steps must not be empty')
     if not errors and root is not None:
         errors.extend(validate_evidence(record, Path(root)))
     return errors
