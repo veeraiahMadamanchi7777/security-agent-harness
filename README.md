@@ -4,7 +4,70 @@ Modular Java security analysis harness for GitHub Copilot agents, prompt files, 
 
 ## What This Provides
 
-This repository defines a VS Code/GitHub Copilot security review agent for Java projects. It is not an executable scanner; it is a structured instruction harness that guides an AI review agent through architecture recon, vulnerability-specific analysis, attack-chain reasoning, and final report consolidation.
+This repository combines an executable Java AST candidate scanner with a structured AI review harness. The executable collects source facts, tracks a bounded subset of Java data flows, validates findings against source evidence, and generates reports. Copilot skills guide the deeper security review that static candidates cannot replace. No component guarantees discovery of every vulnerability.
+
+## Run the executable scanner
+
+Requirements: Java 17 and Python 3.10 or newer. The checked-in Gradle 8.13 wrapper downloads build dependencies on first use. The scan itself is local and does not execute the target project's build or application.
+
+```bash
+python3 tools/scan.py /path/to/java-project --output scan-results/my-project
+```
+
+The output directory must be new or empty. Use a different directory for each run. After building once, add `--no-build` to reuse the installed analyzer. Add `--include-tests` to include test and fixture directories. Build/generated/vendor directories and symlinks are always excluded and listed in the report.
+
+```bash
+# Gate CI on provisional High-or-higher candidates, not only confirmed findings.
+python3 tools/scan.py /path/to/java-project --output scan-results/ci --fail-on High
+
+# Independently verify the finding contract and actual source evidence.
+python3 tools/validate_findings.py scan-results/ci/findings.jsonl --source-root /path/to/java-project
+```
+
+Exit codes: **0** = scan completed within supported scope and passed the selected gate; **1** = severity gate failed; **2** = build, scan, source, or quality-gate failure. Parse failures and empty Java scope are incomplete scans, never successful clean scans. Candidate severity is provisional and is not a computed CVSS score.
+
+Outputs:
+
+| Artifact | Purpose |
+|---|---|
+| `findings.jsonl` | Validated candidates with source, sink, location, taint evidence, review caveats, and fix guidance |
+| `facts.json` | Classes, imports, annotations, methods, entry points, syntactic calls, exclusions, errors, limitations |
+| `graph.json` | Method/call candidates and conservative taint evidence edges, not proven runtime paths |
+| `review-queue.json` | Candidate IDs and explicit coverage/review status for each vulnerability skill |
+| `report.md`, `report.html` | Ranked review reports; HTML escapes source content and uses no scripts or remote assets |
+| `report.sarif` | SARIF 2.1.0 results for compatible code-scanning tools |
+| `summary.json` | Completion status, severity gate, counts, source digests, and artifact inventory |
+
+### Detection coverage
+
+The built-in rules emit **candidates** for SQL/JPQL injection, command construction/execution, path traversal, SSRF, open redirects, writer-based XSS, LDAP filter injection, script evaluation, native deserialization, XML parser use with untrusted input, weak crypto literals, and named hardcoded credential literals. File and ProcessBuilder construction are review points; their presence alone does not prove file access or command execution. XML parser configuration and output encoding require review. The script rule does not cover every template engine.
+
+Sources are explicitly bound Spring parameters and servlet request accessors. Propagation supports local assignments, conservative branches, two loop iterations, and unique same-class helper calls/returns up to depth eight. API/type matching is syntactic. Numeric parsing is recognized; unknown encoders/sanitizers remain reviewable. Neither helper reachability nor runtime exploitability is proven.
+
+**Not automatically covered:** cross-file dispatch, aliases/heap/field taint, implicit binding, all frameworks, dependency CVEs, IDOR, authorization/authentication, business logic, CSRF/CORS, OAuth, GraphQL/WebSocket policy, cache behavior, and deployment configuration. Existing skills remain available for these reviews; `review-queue.json` marks them as requiring review rather than claiming they passed. See [coverage and validation](docs/executable-harness.md).
+
+### Reviewer handoff
+
+All built-in findings have `status: candidate`, never `confirmed`. Review source, runtime configuration and false-positive indicators before changing status to `confirmed` or `dismissed`. Confidence and severity are distinct from review status. Keep the same ID/location/rule when editing an emitted finding. Review additional categories with the existing skills, giving new findings unique IDs.
+
+```bash
+python3 tools/scan.py /path/to/java-project --no-build \
+  --reviewed-findings reviewed.jsonl --output scan-results/reviewed
+```
+
+Reviewed findings are validated against current source before report publication. They replace matching candidate IDs; mismatched ID collisions or fabricated evidence fail. A status label is the reviewer's assertion, not an independent proof by the harness. Reports can contain sensitive source snippets; credential findings themselves redact their literal.
+
+### Verify the harness
+
+```bash
+cd harness-core
+./gradlew --no-daemon test installDist
+cd ..
+python3 -m unittest discover -s tests -v
+python3 tools/scan.py tests/fixtures/vulnerable --no-build --output scan-results/benchmark
+```
+
+CI runs the Java suite, Python validator/report tests, the full fixture benchmark, and the evidence gate. The manual **Java security candidate scan** workflow scans this repository and saves reports; adapt its checkout/path to scan your Java application. It does not upload source or reports to an AI provider.
 
 ## Layout
 

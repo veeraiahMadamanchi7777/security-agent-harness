@@ -1,31 +1,38 @@
-name: harness-core-ci
-
+name: Harness CI
 on:
   pull_request:
   push:
-    branches:
-      - main
-      - f-feature-chatgpt
-
+    branches: [main, feature/executable-security-harness]
+  workflow_dispatch:
+permissions:
+  contents: read
 jobs:
   test:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
-
-      - name: Run Tests
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build analyzer and run Java regression tests
         working-directory: harness-core
-        run: |
-          chmod +x gradlew || true
-          ./gradlew test || gradle test
+        run: ./gradlew --no-daemon test installDist
+      - name: Run validator, report, and end-to-end benchmark tests
+        run: python -m unittest discover -s tests -v
+      - name: Produce controlled benchmark report
+        run: python tools/scan.py tests/fixtures/vulnerable --no-build --output scan-results/benchmark
+      - name: Validate report evidence against fixture source
+        run: python tools/validate_findings.py scan-results/benchmark/findings.jsonl --source-root tests/fixtures/vulnerable
+      - name: Save test and scan reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: harness-verification
+          path: |
+            harness-core/build/reports/tests/
+            scan-results/benchmark/

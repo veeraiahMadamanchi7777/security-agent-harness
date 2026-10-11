@@ -94,3 +94,9 @@ Run `sast-report`.
 - Exclude generated code, vendored dependencies, build outputs, and test fixtures unless the application exposes them at runtime.
 - Report one finding per root cause.
 - If a potentially dangerous API is not reachable from attacker-controlled input, document it only as coverage context, not as a vulnerability.
+
+## Executable evidence handoff
+
+When the executable harness is installed, first run `python3 <harness-root>/tools/scan.py <target-root> --output <new-output-directory>` to collect AST facts, conservative taint candidates, and the explicit review queue. Do not treat `candidate` findings as confirmed vulnerabilities or mark review-only categories as passed. Resolve incomplete scans before claiming scan completion.
+
+Use the existing skills to review the candidate evidence and unsupported categories. Put reviewed findings in a separate JSONL file. Run `python3 <harness-root>/tools/scan.py <target-root> --no-build --reviewed-findings <reviewed.jsonl> --output <another-new-output-directory>` to validate evidence and produce consolidated reports. The executable supports only documented partial analysis; human/agent review is still required.
