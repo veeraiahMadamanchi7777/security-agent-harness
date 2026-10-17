@@ -1,1 +1,8 @@
 .DS_Store
+.gradle/
+build/
+__pycache__/
+*.pyc
+scan-results/
+bin/
+*.class

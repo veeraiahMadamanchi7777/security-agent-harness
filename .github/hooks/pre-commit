@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# Security harness pre-commit hook.
+# Install: cp .github/hooks/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+#
+# Runs the static analyzer on changed Java/config files before each commit.
+# Blocks on Critical or High candidates. Medium/Low are warnings only.
+set -euo pipefail
+
+HARNESS_ROOT="$(git rev-parse --show-toplevel)"
+SCAN_PY="$HARNESS_ROOT/tools/scan.py"
+JAVA_CMD="${JAVA_HOME:-}/bin/java"
+
+# Skip if tools are not present (first checkout, CI environment without harness)
+if [[ ! -f "$SCAN_PY" ]]; then
+  exit 0
+fi
+
+# Collect staged files
+STAGED=$(git diff --cached --name-only --diff-filter=ACM)
+if [[ -z "$STAGED" ]]; then
+  exit 0
+fi
+
+# Check if any security-relevant files are staged
+RELEVANT=$(echo "$STAGED" | grep -E '\.(java|xml|properties|ya?ml|gradle|kts)$' || true)
+if [[ -z "$RELEVANT" ]]; then
+  exit 0
+fi
+
+# Write staged file list for reference
+TMPDIR=$(mktemp -d)
+trap 'rm -rf "$TMPDIR"' EXIT
+
+echo "$RELEVANT" > "$TMPDIR/staged-files.txt"
+echo "Security harness: scanning $(echo "$RELEVANT" | wc -l | tr -d ' ') changed file(s)..."
+
+# Run scan against changed files only. Use --no-build if dist already exists.
+DIST="$HARNESS_ROOT/harness-core/build/install/harness-core"
+BUILD_FLAG=""
+if [[ -d "$DIST" ]]; then
+  BUILD_FLAG="--no-build"
+fi
+
+OUTPUT="$TMPDIR/scan-output"
+set +e
+python3 "$SCAN_PY" "$HARNESS_ROOT" $BUILD_FLAG \
+  --output "$OUTPUT" \
+  --fail-on High \
+  2>&1
+EXIT_CODE=$?
+set -e
+
+# Exit code 0 = clean, 1 = severity gate tripped, 2 = scan error/incomplete
+if [[ $EXIT_CODE -eq 2 ]]; then
+  echo "Security harness: scan incomplete or failed — check output above." >&2
+  echo "To commit anyway (not recommended): git commit --no-verify" >&2
+  exit 1
+fi
+
+if [[ $EXIT_CODE -eq 1 ]]; then
+  echo "" >&2
+  echo "Security harness: Critical or High candidate(s) found in staged changes." >&2
+  echo "Review scan-results or run: python3 tools/scan.py . --output scan-results/pre-commit" >&2
+  echo "To commit anyway (not recommended): git commit --no-verify" >&2
+  exit 1
+fi
+
+# Show report path even on success so the developer can review Medium/Low findings
+if [[ -f "$OUTPUT/report.md" ]]; then
+  echo "Security harness: no Critical/High findings. Full report: $OUTPUT/report.md"
+fi
+
+exit 0

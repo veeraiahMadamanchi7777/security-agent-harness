@@ -1,0 +1,9 @@
+{
+  "vulnerable": {
+    "sast-sqli": 1, "sast-rce": 1, "sast-pathtraversal": 1,
+    "sast-ssrf": 1, "sast-openredirect": 1, "sast-xss": 1,
+    "sast-ldap": 1, "sast-templateinject": 1, "sast-xxe": 1,
+    "sast-deserial": 1, "sast-crypto": 1, "sast-secrets": 1
+  },
+  "safe": {}
+}

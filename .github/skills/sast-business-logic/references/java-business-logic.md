@@ -36,11 +36,11 @@ private ConcurrentHashMap<String, Session> sessions = new ConcurrentHashMap<>();
 | Isolation Level | Prevents | Does NOT Prevent |
 |----------------|---------|-----------------|
 | `READ_UNCOMMITTED` | Nothing | Dirty reads, non-repeatable reads, phantom reads |
-| `READ_COMMITTED` (default JPA) | Dirty reads | Non-repeatable reads, phantom reads, TOCTOU |
+| `READ_COMMITTED` | Dirty reads | Non-repeatable reads, phantom reads, TOCTOU |
 | `REPEATABLE_READ` | Dirty + non-repeatable reads | Phantom reads |
 | `SERIALIZABLE` | All anomalies | Performance |
 
-**Key insight:** Default Spring `@Transactional` uses `READ_COMMITTED` — does not prevent two concurrent transactions from both reading the same balance and both passing a `>= amount` check.
+**Key insight:** Spring `@Transactional` defaults to `Isolation.DEFAULT`, inheriting the underlying transaction system. Inspect the actual database isolation, SQL statements, locking, versions and retry behavior before claiming a race. Missing annotations alone do not prove double-spend. See the [Spring annotation contract](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/transaction/annotation/Transactional.html#isolation()).
 
 ### Locking Patterns
 
