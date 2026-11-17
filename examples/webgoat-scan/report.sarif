@@ -1,0 +1,720 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "runs": [
+    {
+      "invocations": [
+        {
+          "executionSuccessful": true,
+          "toolExecutionNotifications": []
+        }
+      ],
+      "results": [
+        {
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/main/java/org/owasp/webgoat/lessons/challenges/SolutionConstants.java",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startColumn": 10,
+                  "startLine": 10
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "SECRET-001 [candidate] CWE-798: credential literal. Remove the credential literal, rotate it if real, and use a managed secret store or runtime configuration."
+          },
+          "partialFingerprints": {
+            "finding/v1": "79e275bd099e16219a438475e992fef88c910394098368b4ad0daf6aac6fb8ba"
+          },
+          "properties": {
+            "confidence": "Low",
+            "cwe": "CWE-798",
+            "status": "candidate"
+          },
+          "ruleId": "sast-secrets",
+          "ruleIndex": 3
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/main/java/org/owasp/webgoat/lessons/deserialization/InsecureDeserializationTask.java",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startColumn": 9,
+                  "startLine": 43
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "DESERIAL-001 [candidate] CWE-502: new ObjectInputStream(). Replace native deserialization of untrusted data with an explicit schema; otherwise enforce an ObjectInputFilter allowlist."
+          },
+          "partialFingerprints": {
+            "finding/v1": "2c820c9af1e979895b5ac131aefab47ae79c39216270d2167cb22e67df54f0f3"
+          },
+          "properties": {
+            "confidence": "Low",
+            "cwe": "CWE-502",
+            "status": "candidate"
+          },
+          "ruleId": "sast-deserial",
+          "ruleIndex": 1
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/main/java/org/owasp/webgoat/lessons/jwt/JWTRefreshEndpoint.java",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startColumn": 30,
+                  "startLine": 45
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "SECRET-002 [candidate] CWE-798: credential literal. Remove the credential literal, rotate it if real, and use a managed secret store or runtime configuration."
+          },
+          "partialFingerprints": {
+            "finding/v1": "cca0b7f09ae1035273aba10a903b771c275e1679400c5466f6bb3ded66b85e0c"
+          },
+          "properties": {
+            "confidence": "Low",
+            "cwe": "CWE-798",
+            "status": "candidate"
+          },
+          "ruleId": "sast-secrets",
+          "ruleIndex": 3
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/main/java/org/owasp/webgoat/lessons/pathtraversal/ProfileUploadRetrieval.java",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startColumn": 11,
+                  "startLine": 101
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "PATH-001 [candidate] CWE-22: new File(). Resolve under an allowed base directory and verify containment, including symlinks, before file operations."
+          },
+          "partialFingerprints": {
+            "finding/v1": "a75d178c3c9966758d9609960a15e6021b387c92be1c98129d5ff0b809fb5095"
+          },
+          "properties": {
+            "confidence": "Low",
+            "cwe": "CWE-22",
+            "status": "candidate"
+          },
+          "ruleId": "sast-pathtraversal",
+          "ruleIndex": 2
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/main/java/org/owasp/webgoat/lessons/pathtraversal/ProfileZipSlip.java",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startColumn": 18,
+                  "startLine": 79
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "PATH-002 [candidate] CWE-22: new File(). Resolve under an allowed base directory and verify containment, including symlinks, before file operations."
+          },
+          "partialFingerprints": {
+            "finding/v1": "dfb0a8317694ba9afc13676fa1d3ce5b3e8c15013ed8043f00cb71dfe08d04af"
+          },
+          "properties": {
+            "confidence": "Low",
+            "cwe": "CWE-22",
+            "status": "candidate"
+          },
+          "ruleId": "sast-pathtraversal",
+          "ruleIndex": 2
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/main/java/org/owasp/webgoat/lessons/pathtraversal/ProfileZipSlip.java",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startColumn": 9,
+                  "startLine": 81
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "PATH-003 [candidate] CWE-22: copy(). Resolve under an allowed base directory and verify containment, including symlinks, before file operations."
+          },
+          "partialFingerprints": {
+            "finding/v1": "ca97de866dffa2d84f859313db75ae6e21c3b7af4226fd49d447c2beb547c569"
+          },
+          "properties": {
+            "confidence": "Low",
+            "cwe": "CWE-22",
+            "status": "candidate"
+          },
+          "ruleId": "sast-pathtraversal",
+          "ruleIndex": 2
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/main/java/org/owasp/webgoat/lessons/sqlinjection/advanced/SqlInjectionChallenge.java",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startColumn": 31,
+                  "startLine": 61
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "SQLI-001 [candidate] CWE-89: executeQuery(). Use constant SQL/JPQL with bound parameters, not concatenated request values."
+          },
+          "partialFingerprints": {
+            "finding/v1": "8821062559103f1456db5f4b48e768dde70acbb8c5b149e5764a5b9d6fc7e9c2"
+          },
+          "properties": {
+            "confidence": "Medium",
+            "cwe": "CWE-89",
+            "status": "candidate"
+          },
+          "ruleId": "sast-sqli",
+          "ruleIndex": 4
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/main/java/org/owasp/webgoat/lessons/sqlinjection/advanced/SqlInjectionLesson6a.java",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startColumn": 27,
+                  "startLine": 72
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "SQLI-002 [candidate] CWE-89: executeQuery(). Use constant SQL/JPQL with bound parameters, not concatenated request values."
+          },
+          "partialFingerprints": {
+            "finding/v1": "d0b254b1c19652bc6d22bddb099284ca4f11b04cb314d23a1b6ba15a4a238730"
+          },
+          "properties": {
+            "confidence": "Medium",
+            "cwe": "CWE-89",
+            "status": "candidate"
+          },
+          "ruleId": "sast-sqli",
+          "ruleIndex": 4
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/main/java/org/owasp/webgoat/lessons/sqlinjection/introduction/SqlInjectionLesson10.java",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startColumn": 29,
+                  "startLine": 56
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "SQLI-003 [candidate] CWE-89: executeQuery(). Use constant SQL/JPQL with bound parameters, not concatenated request values."
+          },
+          "partialFingerprints": {
+            "finding/v1": "61cdda36dcb3f526e7e572cb99f494caef87e35fc1355d6686ae3f01a52f762f"
+          },
+          "properties": {
+            "confidence": "Medium",
+            "cwe": "CWE-89",
+            "status": "candidate"
+          },
+          "ruleId": "sast-sqli",
+          "ruleIndex": 4
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/main/java/org/owasp/webgoat/lessons/sqlinjection/introduction/SqlInjectionLesson2.java",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startColumn": 27,
+                  "startLine": 49
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "SQLI-004 [candidate] CWE-89: executeQuery(). Use constant SQL/JPQL with bound parameters, not concatenated request values."
+          },
+          "partialFingerprints": {
+            "finding/v1": "a03bc02d8ba58aa9c5229567661b7a7fbf58749d636aa765422d596933bef3fc"
+          },
+          "properties": {
+            "confidence": "Medium",
+            "cwe": "CWE-89",
+            "status": "candidate"
+          },
+          "ruleId": "sast-sqli",
+          "ruleIndex": 4
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/main/java/org/owasp/webgoat/lessons/sqlinjection/introduction/SqlInjectionLesson3.java",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startColumn": 9,
+                  "startLine": 47
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "SQLI-005 [candidate] CWE-89: executeUpdate(). Use constant SQL/JPQL with bound parameters, not concatenated request values."
+          },
+          "partialFingerprints": {
+            "finding/v1": "e1620dc29ff47cfc334a58151f793755a7ba01b4f50461eb16435575d45c0a53"
+          },
+          "properties": {
+            "confidence": "Medium",
+            "cwe": "CWE-89",
+            "status": "candidate"
+          },
+          "ruleId": "sast-sqli",
+          "ruleIndex": 4
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/main/java/org/owasp/webgoat/lessons/sqlinjection/introduction/SqlInjectionLesson4.java",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startColumn": 9,
+                  "startLine": 46
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "SQLI-006 [candidate] CWE-89: executeUpdate(). Use constant SQL/JPQL with bound parameters, not concatenated request values."
+          },
+          "partialFingerprints": {
+            "finding/v1": "85dc9737ca43058b98d976cf0cb16673e9ae50bdb3a20ebe3fbebb4edd3a1922"
+          },
+          "properties": {
+            "confidence": "Medium",
+            "cwe": "CWE-89",
+            "status": "candidate"
+          },
+          "ruleId": "sast-sqli",
+          "ruleIndex": 4
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/main/java/org/owasp/webgoat/lessons/sqlinjection/introduction/SqlInjectionLesson5a.java",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startColumn": 29,
+                  "startLine": 52
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "SQLI-007 [candidate] CWE-89: executeQuery(). Use constant SQL/JPQL with bound parameters, not concatenated request values."
+          },
+          "partialFingerprints": {
+            "finding/v1": "1bb6d77c561b3f32ba80a6834815ea916de602ff51be1cb25ce2def4ba212f9d"
+          },
+          "properties": {
+            "confidence": "Medium",
+            "cwe": "CWE-89",
+            "status": "candidate"
+          },
+          "ruleId": "sast-sqli",
+          "ruleIndex": 4
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/main/java/org/owasp/webgoat/lessons/sqlinjection/introduction/SqlInjectionLesson5b.java",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startColumn": 11,
+                  "startLine": 48
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "SQLI-008 [candidate] CWE-89: prepareStatement(). Use constant SQL/JPQL with bound parameters, not concatenated request values."
+          },
+          "partialFingerprints": {
+            "finding/v1": "ebaca189f0af4dbbba93396508394fd7342713bed942397d12c0cb928733e5b5"
+          },
+          "properties": {
+            "confidence": "Medium",
+            "cwe": "CWE-89",
+            "status": "candidate"
+          },
+          "ruleId": "sast-sqli",
+          "ruleIndex": 4
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/main/java/org/owasp/webgoat/lessons/sqlinjection/introduction/SqlInjectionLesson8.java",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startColumn": 29,
+                  "startLine": 62
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "SQLI-009 [candidate] CWE-89: executeQuery(). Use constant SQL/JPQL with bound parameters, not concatenated request values."
+          },
+          "partialFingerprints": {
+            "finding/v1": "de40a29bd6c66134cb0ed2b8eb0dc86df37d31acb6144399d3a95675df24511d"
+          },
+          "properties": {
+            "confidence": "Medium",
+            "cwe": "CWE-89",
+            "status": "candidate"
+          },
+          "ruleId": "sast-sqli",
+          "ruleIndex": 4
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/main/java/org/owasp/webgoat/lessons/sqlinjection/introduction/SqlInjectionLesson8.java",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startColumn": 7,
+                  "startLine": 142
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "SQLI-010 [candidate] CWE-89: executeUpdate(). Use constant SQL/JPQL with bound parameters, not concatenated request values."
+          },
+          "partialFingerprints": {
+            "finding/v1": "96b142659422ccf8f4f1913f2674bf1396e8f8952c4a547038f2b5f130786a02"
+          },
+          "properties": {
+            "confidence": "Low",
+            "cwe": "CWE-89",
+            "status": "candidate"
+          },
+          "ruleId": "sast-sqli",
+          "ruleIndex": 4
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/main/java/org/owasp/webgoat/lessons/sqlinjection/introduction/SqlInjectionLesson9.java",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startColumn": 7,
+                  "startLine": 65
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "SQLI-011 [candidate] CWE-89: execute(). Use constant SQL/JPQL with bound parameters, not concatenated request values."
+          },
+          "partialFingerprints": {
+            "finding/v1": "f5bcef9601dab0c5939bef113f3ae779105d891ff4fb3bad459a3a583018e2c0"
+          },
+          "properties": {
+            "confidence": "Medium",
+            "cwe": "CWE-89",
+            "status": "candidate"
+          },
+          "ruleId": "sast-sqli",
+          "ruleIndex": 4
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/main/java/org/owasp/webgoat/lessons/ssrf/SSRFTask2.java",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startColumn": 29,
+                  "startLine": 36
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "SSRF-001 [candidate] CWE-918: openStream(). Allowlist destinations and schemes, block private/link-local addresses, and revalidate redirects and DNS resolution."
+          },
+          "partialFingerprints": {
+            "finding/v1": "276d6d8a1815c45bd40044887bacff5248068eb6823764505b7de872ad9492c8"
+          },
+          "properties": {
+            "confidence": "Medium",
+            "cwe": "CWE-918",
+            "status": "candidate"
+          },
+          "ruleId": "sast-ssrf",
+          "ruleIndex": 5
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/main/java/org/owasp/webgoat/webwolf/FileServer.java",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startColumn": 7,
+                  "startLine": 92
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "PATH-004 [candidate] CWE-22: deleteIfExists(). Resolve under an allowed base directory and verify containment, including symlinks, before file operations."
+          },
+          "partialFingerprints": {
+            "finding/v1": "7231f93278aaf729db7734c85ed8b5f661392b2ab6cfd5759325ef0b8ba2a983"
+          },
+          "properties": {
+            "confidence": "Low",
+            "cwe": "CWE-22",
+            "status": "candidate"
+          },
+          "ruleId": "sast-pathtraversal",
+          "ruleIndex": 2
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/main/java/org/owasp/webgoat/webwolf/FileServer.java",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startColumn": 7,
+                  "startLine": 93
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "PATH-005 [candidate] CWE-22: copy(). Resolve under an allowed base directory and verify containment, including symlinks, before file operations."
+          },
+          "partialFingerprints": {
+            "finding/v1": "de6c039ae0b4de39b4e1f3e466dc5934f93d7023f67013805e1a1f50e653f030"
+          },
+          "properties": {
+            "confidence": "Low",
+            "cwe": "CWE-22",
+            "status": "candidate"
+          },
+          "ruleId": "sast-pathtraversal",
+          "ruleIndex": 2
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/main/java/org/owasp/webgoat/webwolf/FileServer.java",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startColumn": 35,
+                  "startLine": 95
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "PATH-006 [candidate] CWE-22: new File(). Resolve under an allowed base directory and verify containment, including symlinks, before file operations."
+          },
+          "partialFingerprints": {
+            "finding/v1": "1a59d9353979f090dd0c9040f0deed7aa44009b725aca44cb2737f7e17dfd0b0"
+          },
+          "properties": {
+            "confidence": "Low",
+            "cwe": "CWE-22",
+            "status": "candidate"
+          },
+          "ruleId": "sast-pathtraversal",
+          "ruleIndex": 2
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/main/java/org/owasp/webgoat/lessons/cryptography/HashingAssignment.java",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startColumn": 26,
+                  "startLine": 39
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "CRYPTO-001 [candidate] CWE-327: getInstance(). Use modern algorithms appropriate to the security purpose, such as AES-GCM for encryption; review keys and nonces separately."
+          },
+          "partialFingerprints": {
+            "finding/v1": "3bd1cbedbdd9bbf45d83ce8b4cabdb4d8c5e3c7cd9909442e131a02618f29d47"
+          },
+          "properties": {
+            "confidence": "Low",
+            "cwe": "CWE-327",
+            "status": "candidate"
+          },
+          "ruleId": "sast-crypto",
+          "ruleIndex": 0
+        }
+      ],
+      "tool": {
+        "driver": {
+          "name": "security-agent-harness",
+          "rules": [
+            {
+              "id": "sast-crypto",
+              "shortDescription": {
+                "text": "sast-crypto"
+              }
+            },
+            {
+              "id": "sast-deserial",
+              "shortDescription": {
+                "text": "sast-deserial"
+              }
+            },
+            {
+              "id": "sast-pathtraversal",
+              "shortDescription": {
+                "text": "sast-pathtraversal"
+              }
+            },
+            {
+              "id": "sast-secrets",
+              "shortDescription": {
+                "text": "sast-secrets"
+              }
+            },
+            {
+              "id": "sast-sqli",
+              "shortDescription": {
+                "text": "sast-sqli"
+              }
+            },
+            {
+              "id": "sast-ssrf",
+              "shortDescription": {
+                "text": "sast-ssrf"
+              }
+            }
+          ],
+          "version": "0.2.0"
+        }
+      }
+    }
+  ],
+  "version": "2.1.0"
+}
