@@ -1,0 +1,28 @@
+package org.springframework.samples.petclinic.system;
+
+import java.util.Base64;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * DEMONSTRATION endpoint added for learning (not part of stock PetClinic). Models an
+ * extremely common real-world feature: an attacker-supplied token (API key / "remember
+ * me" cookie / signed param) that the server Base64-decodes. This is the reachable SINK:
+ * HTTP request bytes -> Base64.getDecoder().decode() -> HotSpot AVX-512 intrinsic (the
+ * code CVE-2026-114938 lives in).
+ */
+@RestController
+public class TokenController {
+
+	@GetMapping("/api/session")
+	@ResponseBody
+	public String session(@RequestParam("token") String token) {
+		// Attacker fully controls `token`. This is what untrusted Base64 decoding
+		// looks like in a normal Spring handler.
+		byte[] raw = Base64.getDecoder().decode(token);
+		return "decoded " + raw.length + " bytes";
+	}
+
+}
