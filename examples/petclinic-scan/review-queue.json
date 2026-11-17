@@ -1,0 +1,150 @@
+{
+  "candidate_ids": [],
+  "coverage": [
+    {
+      "instructions": ".github/skills/sast-api-abuse/SKILL.md",
+      "skill": "sast-api-abuse",
+      "status": "review-required"
+    },
+    {
+      "instructions": ".github/skills/sast-attack-chain/SKILL.md",
+      "skill": "sast-attack-chain",
+      "status": "review-required"
+    },
+    {
+      "instructions": ".github/skills/sast-auth/SKILL.md",
+      "skill": "sast-auth",
+      "status": "review-required"
+    },
+    {
+      "instructions": ".github/skills/sast-business-logic/SKILL.md",
+      "skill": "sast-business-logic",
+      "status": "review-required"
+    },
+    {
+      "instructions": ".github/skills/sast-cache/SKILL.md",
+      "skill": "sast-cache",
+      "status": "review-required"
+    },
+    {
+      "instructions": ".github/skills/sast-cors/SKILL.md",
+      "skill": "sast-cors",
+      "status": "review-required"
+    },
+    {
+      "instructions": ".github/skills/sast-crypto/SKILL.md",
+      "skill": "sast-crypto",
+      "status": "partial-candidate-analysis"
+    },
+    {
+      "instructions": ".github/skills/sast-csrf/SKILL.md",
+      "skill": "sast-csrf",
+      "status": "review-required"
+    },
+    {
+      "instructions": ".github/skills/sast-dependency/SKILL.md",
+      "skill": "sast-dependency",
+      "status": "review-required"
+    },
+    {
+      "instructions": ".github/skills/sast-deserial/SKILL.md",
+      "skill": "sast-deserial",
+      "status": "partial-candidate-analysis"
+    },
+    {
+      "instructions": ".github/skills/sast-file-upload/SKILL.md",
+      "skill": "sast-file-upload",
+      "status": "review-required"
+    },
+    {
+      "instructions": ".github/skills/sast-graphql/SKILL.md",
+      "skill": "sast-graphql",
+      "status": "review-required"
+    },
+    {
+      "instructions": ".github/skills/sast-grpc/SKILL.md",
+      "skill": "sast-grpc",
+      "status": "review-required"
+    },
+    {
+      "instructions": ".github/skills/sast-headers/SKILL.md",
+      "skill": "sast-headers",
+      "status": "review-required"
+    },
+    {
+      "instructions": ".github/skills/sast-idor/SKILL.md",
+      "skill": "sast-idor",
+      "status": "review-required"
+    },
+    {
+      "instructions": ".github/skills/sast-ldap/SKILL.md",
+      "skill": "sast-ldap",
+      "status": "partial-candidate-analysis"
+    },
+    {
+      "instructions": ".github/skills/sast-logging/SKILL.md",
+      "skill": "sast-logging",
+      "status": "review-required"
+    },
+    {
+      "instructions": ".github/skills/sast-massassignment/SKILL.md",
+      "skill": "sast-massassignment",
+      "status": "review-required"
+    },
+    {
+      "instructions": ".github/skills/sast-oauth/SKILL.md",
+      "skill": "sast-oauth",
+      "status": "review-required"
+    },
+    {
+      "instructions": ".github/skills/sast-openredirect/SKILL.md",
+      "skill": "sast-openredirect",
+      "status": "partial-candidate-analysis"
+    },
+    {
+      "instructions": ".github/skills/sast-pathtraversal/SKILL.md",
+      "skill": "sast-pathtraversal",
+      "status": "partial-candidate-analysis"
+    },
+    {
+      "instructions": ".github/skills/sast-rce/SKILL.md",
+      "skill": "sast-rce",
+      "status": "partial-candidate-analysis"
+    },
+    {
+      "instructions": ".github/skills/sast-secrets/SKILL.md",
+      "skill": "sast-secrets",
+      "status": "partial-candidate-analysis"
+    },
+    {
+      "instructions": ".github/skills/sast-sqli/SKILL.md",
+      "skill": "sast-sqli",
+      "status": "partial-candidate-analysis"
+    },
+    {
+      "instructions": ".github/skills/sast-ssrf/SKILL.md",
+      "skill": "sast-ssrf",
+      "status": "partial-candidate-analysis"
+    },
+    {
+      "instructions": ".github/skills/sast-templateinject/SKILL.md",
+      "skill": "sast-templateinject",
+      "status": "partial-candidate-analysis"
+    },
+    {
+      "instructions": ".github/skills/sast-websocket/SKILL.md",
+      "skill": "sast-websocket",
+      "status": "review-required"
+    },
+    {
+      "instructions": ".github/skills/sast-xss/SKILL.md",
+      "skill": "sast-xss",
+      "status": "partial-candidate-analysis"
+    },
+    {
+      "instructions": ".github/skills/sast-xxe/SKILL.md",
+      "skill": "sast-xxe",
+      "status": "partial-candidate-analysis"
+    }
+  ]
+}

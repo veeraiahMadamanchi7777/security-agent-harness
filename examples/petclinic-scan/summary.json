@@ -1,0 +1,204 @@
+{
+  "ai_review": {
+    "status": "disabled"
+  },
+  "artifacts": [
+    "facts.json",
+    "graph.json",
+    "review-queue.json",
+    "findings.jsonl",
+    "report.md",
+    "report.html",
+    "report.sarif",
+    "summary.json"
+  ],
+  "candidates": 0,
+  "complete": true,
+  "confirmed": 0,
+  "coverage": [
+    {
+      "instructions": ".github/skills/sast-api-abuse/SKILL.md",
+      "skill": "sast-api-abuse",
+      "status": "review-required"
+    },
+    {
+      "instructions": ".github/skills/sast-attack-chain/SKILL.md",
+      "skill": "sast-attack-chain",
+      "status": "review-required"
+    },
+    {
+      "instructions": ".github/skills/sast-auth/SKILL.md",
+      "skill": "sast-auth",
+      "status": "review-required"
+    },
+    {
+      "instructions": ".github/skills/sast-business-logic/SKILL.md",
+      "skill": "sast-business-logic",
+      "status": "review-required"
+    },
+    {
+      "instructions": ".github/skills/sast-cache/SKILL.md",
+      "skill": "sast-cache",
+      "status": "review-required"
+    },
+    {
+      "instructions": ".github/skills/sast-cors/SKILL.md",
+      "skill": "sast-cors",
+      "status": "review-required"
+    },
+    {
+      "instructions": ".github/skills/sast-crypto/SKILL.md",
+      "skill": "sast-crypto",
+      "status": "partial-candidate-analysis"
+    },
+    {
+      "instructions": ".github/skills/sast-csrf/SKILL.md",
+      "skill": "sast-csrf",
+      "status": "review-required"
+    },
+    {
+      "instructions": ".github/skills/sast-dependency/SKILL.md",
+      "skill": "sast-dependency",
+      "status": "review-required"
+    },
+    {
+      "instructions": ".github/skills/sast-deserial/SKILL.md",
+      "skill": "sast-deserial",
+      "status": "partial-candidate-analysis"
+    },
+    {
+      "instructions": ".github/skills/sast-file-upload/SKILL.md",
+      "skill": "sast-file-upload",
+      "status": "review-required"
+    },
+    {
+      "instructions": ".github/skills/sast-graphql/SKILL.md",
+      "skill": "sast-graphql",
+      "status": "review-required"
+    },
+    {
+      "instructions": ".github/skills/sast-grpc/SKILL.md",
+      "skill": "sast-grpc",
+      "status": "review-required"
+    },
+    {
+      "instructions": ".github/skills/sast-headers/SKILL.md",
+      "skill": "sast-headers",
+      "status": "review-required"
+    },
+    {
+      "instructions": ".github/skills/sast-idor/SKILL.md",
+      "skill": "sast-idor",
+      "status": "review-required"
+    },
+    {
+      "instructions": ".github/skills/sast-ldap/SKILL.md",
+      "skill": "sast-ldap",
+      "status": "partial-candidate-analysis"
+    },
+    {
+      "instructions": ".github/skills/sast-logging/SKILL.md",
+      "skill": "sast-logging",
+      "status": "review-required"
+    },
+    {
+      "instructions": ".github/skills/sast-massassignment/SKILL.md",
+      "skill": "sast-massassignment",
+      "status": "review-required"
+    },
+    {
+      "instructions": ".github/skills/sast-oauth/SKILL.md",
+      "skill": "sast-oauth",
+      "status": "review-required"
+    },
+    {
+      "instructions": ".github/skills/sast-openredirect/SKILL.md",
+      "skill": "sast-openredirect",
+      "status": "partial-candidate-analysis"
+    },
+    {
+      "instructions": ".github/skills/sast-pathtraversal/SKILL.md",
+      "skill": "sast-pathtraversal",
+      "status": "partial-candidate-analysis"
+    },
+    {
+      "instructions": ".github/skills/sast-rce/SKILL.md",
+      "skill": "sast-rce",
+      "status": "partial-candidate-analysis"
+    },
+    {
+      "instructions": ".github/skills/sast-secrets/SKILL.md",
+      "skill": "sast-secrets",
+      "status": "partial-candidate-analysis"
+    },
+    {
+      "instructions": ".github/skills/sast-sqli/SKILL.md",
+      "skill": "sast-sqli",
+      "status": "partial-candidate-analysis"
+    },
+    {
+      "instructions": ".github/skills/sast-ssrf/SKILL.md",
+      "skill": "sast-ssrf",
+      "status": "partial-candidate-analysis"
+    },
+    {
+      "instructions": ".github/skills/sast-templateinject/SKILL.md",
+      "skill": "sast-templateinject",
+      "status": "partial-candidate-analysis"
+    },
+    {
+      "instructions": ".github/skills/sast-websocket/SKILL.md",
+      "skill": "sast-websocket",
+      "status": "review-required"
+    },
+    {
+      "instructions": ".github/skills/sast-xss/SKILL.md",
+      "skill": "sast-xss",
+      "status": "partial-candidate-analysis"
+    },
+    {
+      "instructions": ".github/skills/sast-xxe/SKILL.md",
+      "skill": "sast-xxe",
+      "status": "partial-candidate-analysis"
+    }
+  ],
+  "discovered_files": 30,
+  "engine": "java-ast-candidates/1",
+  "errors": [],
+  "fail_on": "none",
+  "findings": 0,
+  "parsed_files": 30,
+  "severity_gate_failed": false,
+  "source_sha256": {
+    "src/main/java/org/springframework/samples/petclinic/PetClinicApplication.java": "9d99b4b59cc6e185e9a27964b24ede04180ca34211a7e19f968249ee3dac9df3",
+    "src/main/java/org/springframework/samples/petclinic/PetClinicRuntimeHints.java": "2a365e4c85ec16300ccc6101e2543980a30ea72c34c6a0c51d5e56c0d5ad6633",
+    "src/main/java/org/springframework/samples/petclinic/model/BaseEntity.java": "2c8f47a328f8bc4ad0ed887890dcf731469ec8f1032b5420d173c7aa5a352600",
+    "src/main/java/org/springframework/samples/petclinic/model/NamedEntity.java": "6695dafa9b8d4cc67c0cf9305b17b897c58103ca33c12dd0f9375edcfe815b32",
+    "src/main/java/org/springframework/samples/petclinic/model/Person.java": "a872c368cd5b09a7cb8a3f42e1baff1f6b0adc7cfc5bccf5f426374292ba4244",
+    "src/main/java/org/springframework/samples/petclinic/model/package-info.java": "60ad8255055c10e2af03b3b456527ba28f8def8d520037eb7230f647a634b387",
+    "src/main/java/org/springframework/samples/petclinic/owner/Owner.java": "a5273cbccaf4993c92cc204c4481d52ebc611b731862f078b203b2a7eefa5f8a",
+    "src/main/java/org/springframework/samples/petclinic/owner/OwnerController.java": "611115841f671065ca2796fbb096102d56ce6aafd20bfe9a264f0a6968cca3ff",
+    "src/main/java/org/springframework/samples/petclinic/owner/OwnerRepository.java": "654cc5a38b2806748116caf4fbd6a99010a35605db32a12707078c34ccec2cd9",
+    "src/main/java/org/springframework/samples/petclinic/owner/Pet.java": "ec77c2d70ae043c6eb441e47ebc93a3d848d8ae9729068e8f4e997aedfa0bbd7",
+    "src/main/java/org/springframework/samples/petclinic/owner/PetController.java": "1a8a8097ff334b85d3a62c4df79ec52c2dbee8777925970e140081cff7e7c25e",
+    "src/main/java/org/springframework/samples/petclinic/owner/PetType.java": "9e64329633ce98a96f18cecf7426338d57b753fd24b7b47f7af483467a3df92e",
+    "src/main/java/org/springframework/samples/petclinic/owner/PetTypeFormatter.java": "af232944dba211094ee5f6b5b3e2bc9696e46ba8f40cad0e5bf7e0b283aacac7",
+    "src/main/java/org/springframework/samples/petclinic/owner/PetTypeRepository.java": "696705e51ab5835ac28630397de2d3f3541d3f419f19461e11755a9aac2afa04",
+    "src/main/java/org/springframework/samples/petclinic/owner/PetValidator.java": "1cee4c2a57afd7edb3521fa7a19c4b643f23c2f5b91406ecd638319c6cce9f7f",
+    "src/main/java/org/springframework/samples/petclinic/owner/Visit.java": "587191bc74fbbb696e90114366db6988cd6f07c25cd2e991c038d6bda52df123",
+    "src/main/java/org/springframework/samples/petclinic/owner/VisitController.java": "b7c8f9cb7b2b2b5827d85787d1f18c95762a0213760013cef9d0a9e1c2c0f8d8",
+    "src/main/java/org/springframework/samples/petclinic/owner/package-info.java": "ef81fe2aec55635182295f564699812c334c9a6ccf85b0bae1fe7e38d487c05a",
+    "src/main/java/org/springframework/samples/petclinic/package-info.java": "517071851080c7b62c81842b14d0abf5a8cbc2b270fecd00b19ef580c9e29d59",
+    "src/main/java/org/springframework/samples/petclinic/system/CacheConfiguration.java": "1375dfc554a1efa859d2e54cf6fe82724aecea8b46d0c2ab06aabd1aa14ef9da",
+    "src/main/java/org/springframework/samples/petclinic/system/CrashController.java": "d7c003dc6357596eefa345eff63ecf3909a50238e030e3c93f09426e537ba517",
+    "src/main/java/org/springframework/samples/petclinic/system/WebConfiguration.java": "d9eb227f4ffcd434b2000ac30fce9b5e341f85e893c4b3536b50fbbc15384b92",
+    "src/main/java/org/springframework/samples/petclinic/system/WelcomeController.java": "cfdffa794c8ec7a0c634a7d39d39f9abc1dd2ddc4b4d7a591b341136015a6f66",
+    "src/main/java/org/springframework/samples/petclinic/system/package-info.java": "0abef93e8f17f46c984af46d98e7e5308dea22b4bce4cca6c7776d6773aa968a",
+    "src/main/java/org/springframework/samples/petclinic/vet/Specialty.java": "0fa07bcb3b7b4ddb380a278d98dcfe03bec5e3a1e42b9f08c555d75a6be256d0",
+    "src/main/java/org/springframework/samples/petclinic/vet/Vet.java": "8548e47aaf310b276d5cc9f58976756339b16a02ac47944f778260f2ed121b78",
+    "src/main/java/org/springframework/samples/petclinic/vet/VetController.java": "8fb67351a3d4b28c220a870178cb72998ef6dfaa303dd65f2e8c242eb2ddbbfa",
+    "src/main/java/org/springframework/samples/petclinic/vet/VetRepository.java": "732888e66084f9f94dd79c181e29dbbe2c752959c10ebf82b0940700f61c0dde",
+    "src/main/java/org/springframework/samples/petclinic/vet/Vets.java": "8a9b86de5dd337047eacd492f03526974d82e3765e0a628341a190ffb1bb1707",
+    "src/main/java/org/springframework/samples/petclinic/vet/package-info.java": "a30b355dc2cfabd423e1c9171331288f5e343d8746ad8d12363e9d3f87816fc3"
+  }
+}
