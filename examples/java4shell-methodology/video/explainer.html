@@ -1,0 +1,122 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+:root{--bg:#0b1020;--fg:#e6edf3;--mut:#8b98b0;--acc:#5aa2ff;--ok:#39d98a;--warn:#ffb020;--bad:#ff5d6c;--card:#131a30;--line:#263154}
+*{box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
+html,body{margin:0;width:1280px;height:720px;background:var(--bg);color:var(--fg);overflow:hidden}
+.stage{position:absolute;inset:0;padding:48px 64px}
+.scene{position:absolute;inset:0;padding:48px 64px;opacity:0;transition:opacity .5s}
+.scene.on{opacity:1}
+h1{font-size:40px;margin:0 0 6px} h2{font-size:26px;color:var(--acc);margin:0 0 24px;font-weight:600}
+.sub{color:var(--mut);font-size:20px;line-height:1.5}
+.badge{position:absolute;top:28px;right:64px;font-size:14px;color:var(--warn);border:1px solid var(--warn);border-radius:20px;padding:4px 14px}
+.flow{display:flex;align-items:center;gap:14px;margin-top:40px;flex-wrap:wrap}
+.node{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 20px;font-size:17px;min-width:150px;text-align:center;opacity:.25;transition:.4s;transform:translateY(0)}
+.node .t{font-size:13px;color:var(--mut);margin-bottom:6px}
+.node.lit{opacity:1;border-color:var(--acc);box-shadow:0 0 0 3px rgba(90,162,255,.15)}
+.node.bad{border-color:var(--bad);box-shadow:0 0 0 3px rgba(255,93,108,.18)}
+.arrow{color:var(--mut);font-size:26px;opacity:.4;transition:.4s}.arrow.lit{opacity:1;color:var(--acc)}
+.code{background:#0a0f1e;border:1px solid var(--line);border-radius:12px;padding:22px 26px;font-family:'Cascadia Code',Consolas,monospace;font-size:19px;line-height:1.7;margin-top:30px;white-space:pre-wrap}
+.cmt{color:var(--mut)} .grn{color:var(--ok)} .blu{color:var(--acc)} .red{color:var(--bad)} .yel{color:var(--warn)} .wht{color:#fff}
+.big{font-size:30px;line-height:1.5}
+.row{display:flex;gap:28px;margin-top:26px}
+.col{flex:1;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:22px}
+.col h3{margin:0 0 12px;font-size:19px}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px}
+.fade{opacity:0;transition:opacity .5s} .fade.on{opacity:1}
+.foot{position:absolute;bottom:26px;left:64px;color:var(--mut);font-size:15px}
+.step{opacity:.3;transition:.35s;margin:10px 0;font-size:20px}.step.on{opacity:1}
+.kbd{background:#0a0f1e;border:1px solid var(--line);border-bottom-width:3px;border-radius:7px;padding:2px 10px;font-family:monospace}
+</style></head><body>
+<div class="stage">
+  <div class="badge">Educational · reachability only · not an exploit</div>
+
+  <div class="scene" id="s0">
+    <h1>Java4Shell — how it really works</h1>
+    <h2>CVE-2026-114938 · OpenJDK Base64 decoder</h2>
+    <div class="sub big">A memory bug that lives <span class="yel">inside the JVM</span>, not in your app code.<br><br>
+    <span class="mut">Status (per Hadrian, Nov 17 2026): CVE <span class="wht">reserved</span>, no public description,<br>no confirmed vendor advisory, no exploitation reported. Treat as unverified.</span></div>
+  </div>
+
+  <div class="scene" id="s1">
+    <h1>1 · Why Java is usually safe</h1>
+    <h2>Every array access is bounds-checked</h2>
+    <div class="code"><span class="blu">byte</span>[] out = <span class="blu">new byte</span>[1];
+out[<span class="yel">3</span>] = 0x41;  <span class="cmt">// ← Java throws ArrayIndexOutOfBoundsException</span>
+                <span class="grn">// memory is protected. no corruption.</span></div>
+    <div class="sub" style="margin-top:28px">So application code <b>cannot</b> normally overflow memory. That's why this class of bug is rare in Java.</div>
+  </div>
+
+  <div class="scene" id="s2">
+    <h1>2 · The JVM swaps in hand-written assembly</h1>
+    <h2>On AVX-512 CPUs, Base64 decode becomes a native "intrinsic"</h2>
+    <div class="flow">
+      <div class="node lit"><div class="t">your code</div>Base64.decode()</div>
+      <div class="arrow lit">→</div>
+      <div class="node" id="n_pick"><div class="t">HotSpot JIT picks</div>which implementation?</div>
+    </div>
+    <div class="row">
+      <div class="col" id="c_safe"><h3><span class="dot" style="background:var(--ok)"></span>Pure Java decoder</h3><div class="sub">Bounds-checked. Safe. Used on ARM / older CPUs.</div></div>
+      <div class="col" id="c_intr"><h3><span class="dot" style="background:var(--bad)"></span>AVX-512 intrinsic (JDK-8268276)</h3><div class="sub">Raw pointers, <b>no bounds checks</b>. On by default. <span class="red">The bug lives here.</span></div></div>
+    </div>
+  </div>
+
+  <div class="scene" id="s3">
+    <h1>3 · A length miscount writes past the buffer</h1>
+    <h2>Proven safely with a tiny native model + AddressSanitizer</h2>
+    <div class="code"><span class="cmt">// "Mw==" should decode to 1 byte. Buggy loop writes 3.</span>
+<span class="red">==ERROR: AddressSanitizer: heap-buffer-overflow</span>
+WRITE of size 1 ... <span class="yel">0 bytes after a 1-byte region</span>
+  in decode_buggy minibase64.c:49
+<span class="cmt">// WITHOUT sanitizer (a normal JVM):</span> <span class="grn">exit=0, no error</span>
+<span class="mut">   → the extra bytes silently corrupt adjacent heap memory</span></div>
+    <div class="sub" style="margin-top:22px"><span class="grn">Caught in the lab</span> ·vs· <span class="red">silent in production</span> — that contrast <b>is</b> the vulnerability.</div>
+  </div>
+
+  <div class="scene" id="s4">
+    <h1>4 · How the call is made</h1>
+    <h2>Attacker input over HTTP → real handler → the intrinsic</h2>
+    <div class="flow">
+      <div class="node" id="f0"><div class="t">attacker</div>HTTP request</div>
+      <div class="arrow" id="a0">→</div>
+      <div class="node" id="f1"><div class="t">live PetClinic</div>/api/session?token=</div>
+      <div class="arrow" id="a1">→</div>
+      <div class="node" id="f2"><div class="t">handler</div>Base64.decode(token)</div>
+      <div class="arrow" id="a2">→</div>
+      <div class="node bad" id="f3" style="opacity:.25"><div class="t">JVM</div>AVX-512 intrinsic</div>
+    </div>
+    <div class="code" style="margin-top:34px"><span class="cmt"># the call — attacker fully controls the token bytes</span>
+<span class="grn">curl</span> <span class="wht">"http://localhost:8080/api/session?token=$(</span><span class="blu">echo</span> dXNlcj0x<span class="wht">)"</span>
+<span class="step" id="r1"><span class="mut">→ live JVM log:</span> java.util.Base64$Decoder::decodeBlock <span class="red">(intrinsic)</span></span></div>
+  </div>
+
+  <div class="scene" id="s5">
+    <h1>5 · Detect &amp; mitigate</h1>
+    <h2>Verifiable, safe, today</h2>
+    <div class="step on" id="m1">🔎 <b>Find exposure:</b> Java 17.0.6+/21/25 on x86 with <span class="kbd">grep avx512_vbmi /proc/cpuinfo</span></div>
+    <div class="step on" id="m2">🧪 <b>Hunt the bug:</b> differential fuzz the two decoders + run the JVM under AddressSanitizer</div>
+    <div class="step on" id="m3">🛡️ <b>Interim mitigation:</b> <span class="kbd">-XX:-UseBASE64Intrinsics</span> → intrinsic drops out, app still works</div>
+    <div class="step on" id="m4">✅ <b>Real fix:</b> patched JVM per your vendor's advisory (confirm it names this CVE)</div>
+    <div class="sub" style="margin-top:30px">Your app code can be <span class="grn">clean</span> and still exposed — the defect is below it, in the JVM.</div>
+  </div>
+
+  <div class="foot">Educational walkthrough · no exploit, no CVE trigger · security-agent-harness/examples/java4shell-methodology</div>
+</div>
+<script>
+const scenes=['s0','s1','s2','s3','s4','s5'];
+const T={s0:4500,s1:4500,s2:6000,s3:5500,s4:7000,s5:6500};
+function lit(id){const e=document.getElementById(id);if(e)e.classList.add('lit')}
+let t=0;
+async function run(){
+  for(const s of scenes){
+    scenes.forEach(x=>document.getElementById(x).classList.remove('on'));
+    document.getElementById(s).classList.add('on');
+    if(s==='s2'){setTimeout(()=>{document.getElementById('c_intr').style.borderColor='var(--bad)';document.getElementById('c_intr').style.boxShadow='0 0 0 3px rgba(255,93,108,.2)'},1500);}
+    if(s==='s4'){
+      const seq=[['f0',300],['a0',800],['f1',1200],['a1',1700],['f2',2200],['a2',2700],['f3',3200],['r1',4200]];
+      seq.forEach(([id,ms])=>setTimeout(()=>{const e=document.getElementById(id);if(id==='f3'){e.style.opacity=1}else if(id.startsWith('a')){e.classList.add('lit')}else if(id==='r1'){e.classList.add('on')}else{e.classList.add('lit')}},ms));
+    }
+    await new Promise(r=>setTimeout(r,T[s]));
+  }
+  document.body.setAttribute('data-done','1');
+}
+run();
+</script></body></html>
